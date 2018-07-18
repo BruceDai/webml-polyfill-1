@@ -8,7 +8,7 @@ describe('Abnormal Test', function() {
   });
 
   describe('#addOperation API', function() {
-    it('Fuse code as "4" for operation code "ADD"', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "ADD" operation', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [2, 2, 2, 2]};
         let type0_length = product(type0.dimensions);
@@ -34,7 +34,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "ADD"', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "ADD" operation', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [2, 2, 2, 2]};
         let type0_length = product(type0.dimensions);
@@ -60,7 +60,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "AVERAGE_POOL_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "AVERAGE_POOL_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -90,7 +90,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "AVERAGE_POOL_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "AVERAGE_POOL_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -120,7 +120,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "AVERAGE_POOL_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "AVERAGE_POOL_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -150,7 +150,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "AVERAGE_POOL_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "AVERAGE_POOL_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -180,7 +180,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "CONV_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "CONV_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -222,7 +222,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "CONV_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "CONV_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -264,7 +264,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "CONV_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "CONV_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -306,7 +306,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "CONV_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "CONV_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -348,7 +348,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "DEPTHWISE_CONV_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "DEPTHWISE_CONV_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -393,7 +393,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "DEPTHWISE_CONV_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "DEPTHWISE_CONV_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -438,7 +438,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "DEPTHWISE_CONV_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "DEPTHWISE_CONV_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -483,7 +483,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "DEPTHWISE_CONV_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "DEPTHWISE_CONV_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 32, 32, 3]};
         let type0_length = product(type0.dimensions);
@@ -528,7 +528,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "MAX_POOL_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "MAX_POOL_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -558,7 +558,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "MAX_POOL_2D" with explicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "MAX_POOL_2D" operation with explicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -588,7 +588,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "MAX_POOL_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "MAX_POOL_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -618,7 +618,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "MAX_POOL_2D" with implicit padding', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "MAX_POOL_2D" operation with implicit padding', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [100, 7, 7, 3]};
         let type0_length = product(type0.dimensions);
@@ -648,7 +648,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "4" for operation code "MUL"', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "4" for "MUL" operation', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [2, 2, 2, 2]};
         let type0_length = product(type0.dimensions);
@@ -674,7 +674,7 @@ describe('Abnormal Test', function() {
       });
     });
 
-    it('Fuse code as "-1" for operation code "MUL"', function() {
+    it('raise error when the value of fuse code is invalid(out of 0-3) as "-1" for "MUL" operation', function() {
       return nn.createModel(options).then((model)=>{
         let type0 = {type: nn.TENSOR_FLOAT32, dimensions: [2, 2, 2, 2]};
         let type0_length = product(type0.dimensions);
