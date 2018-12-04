@@ -4491,11 +4491,11 @@ describe('Unit Test/Model Test', function() {
       });
     });
 
-    it('"input0 as a tensor (rank <= 4) of TENSOR_FLOAT32 type, input1 as INT32 type, input2 as INT32 type" are ok for "RESIZE_BILINEAR" operation', function() {
+    it('"input0 as a tensor (rank = 4) of TENSOR_FLOAT32 type, input1 as INT32 type, input2 as INT32 type" are ok for "RESIZE_BILINEAR" operation', function() {
       return nn.createModel(options).then((model)=>{
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 4.0, 4.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 4, 4, 1]});
         model.addOperand({type: nn.INT32});
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 2.0, 2.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1]});
         model.setOperandValue(1, new Int32Array([2]));
         assert.doesNotThrow(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 1], [2]);
@@ -4505,10 +4505,10 @@ describe('Unit Test/Model Test', function() {
 
     it('"output aspect ratio is not the same as input aspect ratio" is ok for "RESIZE_BILINEAR" operation', function() {
       return nn.createModel(options).then((model)=>{
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 4.0, 4.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 4, 4, 1]});
         model.addOperand({type: nn.INT32});
         model.addOperand({type: nn.INT32});
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 2.0, 1.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1]});
         model.setOperandValue(1, new Int32Array([2]));
         model.setOperandValue(2, new Int32Array([1]));
         assert.doesNotThrow(() => {
@@ -4519,10 +4519,10 @@ describe('Unit Test/Model Test', function() {
 
     it('raise error when the rank of input0 is greater than 4 for "RESIZE_BILINEAR" operation', function() {
       return nn.createModel(options).then((model)=>{
-        let RANK5_DIMENSIONS = [1.0, 4.0, 4.0, 1.0, 1.0];
+        let RANK5_DIMENSIONS = [1, 4, 4, 1, 1];
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: RANK5_DIMENSIONS});
         model.addOperand({type: nn.INT32});
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 2.0, 2.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1]});
         model.setOperandValue(1, new Int32Array([2]));
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 1], [2]);
@@ -4532,9 +4532,9 @@ describe('Unit Test/Model Test', function() {
 
     it('raise error when input1 and input2 are not INT32 type for "RESIZE_BILINEAR" operation', function() {
       return nn.createModel(options).then((model)=>{
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 4.0, 4.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 4, 4, 1]});
         model.addOperand({type: nn.FLOAT32});
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 2.0, 2.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1]});
         model.setOperandValue(1, new Float32Array([2.1]));
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 1], [2]);
@@ -4542,11 +4542,11 @@ describe('Unit Test/Model Test', function() {
       });
     });
 
-    it('raise error when output is greater than 4 for "RESIZE_BILINEAR" operation', function() {
+    it('raise error when the rank of output is greater than 4 for "RESIZE_BILINEAR" operation', function() {
       return nn.createModel(options).then((model)=>{
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 4.0, 4.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 4, 4, 1]});
         model.addOperand({type: nn.INT32});
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1.0, 2.0, 2.0, 1.0, 1.0]});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1, 1]});
         model.setOperandValue(1, new Int32Array([2]));
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 1], [2]);
