@@ -4491,7 +4491,7 @@ describe('Unit Test/Model Test', function() {
       });
     });
 
-    it('"input0 as a tensor (rank = 4) of TENSOR_FLOAT32 type, input1 and input2 as TENSOR_INT32 type"  new_height and new_width greater than original data are ok for "RESIZE_BILINEAR" operation', () => {
+    it('"input0 as a tensor (rank = 4) of TENSOR_FLOAT32 type, input1 and input2 as INT32 type"  new_height and new_width greater than original data are ok for "RESIZE_BILINEAR" operation', () => {
       return nn.createModel(options).then((model) => {
         let batches = 2;
         let height = 3;
@@ -4511,7 +4511,7 @@ describe('Unit Test/Model Test', function() {
       });
     });
 
-    it('"input0 as a tensor (rank = 4) of TENSOR_FLOAT32 type, input1 and input2 as TENSOR_INT32 type"  new_height and new_width less than original data are ok for "RESIZE_BILINEAR" operation', () => {
+    it('"input0 as a tensor (rank = 4) of TENSOR_FLOAT32 type, input1 and input2 as INT32 type"  new_height and new_width less than original data are ok for "RESIZE_BILINEAR" operation', () => {
       return nn.createModel(options).then((model) => {
         let batches = 4;
         let height = 4;
