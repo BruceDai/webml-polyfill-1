@@ -4571,21 +4571,15 @@ describe('Unit Test/Model Test', function() {
       });
     });
 
-    it('raise error when the number of elements in output tensor is not equal the number of elements in the input tensor for "RESIZE_BILINEAR" operation', () => {
-      return nn.createModel(options).then((model) => {
-        let batches = 2;
-        let height = 3;
-        let width = 4;
-        let depth = 5;
-        let new_height = 6;
-        let new_width = 6;
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, height, width, depth]});
+    it('"output aspect ratio is not the same as input aspect ratio" is ok for "RESIZE_BILINEAR" operation', () => {
+      return nn.createModel(options).then((model)=>{
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 4, 4, 1]});
         model.addOperand({type: nn.INT32});
-        model.setOperandValue(1, new Int32Array([new_height]));
         model.addOperand({type: nn.INT32});
-        model.setOperandValue(2, new Int32Array([new_width]));
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth, depth]});
-        assert.throws(() => {
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1]});
+        model.setOperandValue(1, new Int32Array([2]));
+        model.setOperandValue(2, new Int32Array([1]));
+        assert.doesNotThrow(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2], [3]);
         });
       });
@@ -4605,6 +4599,7 @@ describe('Unit Test/Model Test', function() {
         model.addOperand({type: nn.INT32});
         model.setOperandValue(2, new Int32Array([new_width]));
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth]});
+        model.addOperand({type: nn.INT32});
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2, 3], [4]);
         });
@@ -4625,6 +4620,7 @@ describe('Unit Test/Model Test', function() {
         model.addOperand({type: nn.INT32});
         model.setOperandValue(2, new Int32Array([new_width]));
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth]});
+        model.addOperand({type: nn.INT32});
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2], [3, 4]);
         });
@@ -4643,7 +4639,6 @@ describe('Unit Test/Model Test', function() {
         model.addOperand({type: nn.INT32});
         model.setOperandValue(1, new Int32Array([new_height]));
         model.addOperand({type: nn.INT32});
-        model.setOperandValue(2, new Int32Array([new_width]));
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth]});
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1], [2]);
@@ -4719,7 +4714,7 @@ describe('Unit Test/Model Test', function() {
         let depth = 5;
         let new_height = 6;
         let new_width = 6;
-        model.addOperand({type: nn.INT32, dimensions: [batches, height, width, depth]});
+        model.addOperand({type: nn.INT32});
         model.addOperand({type: nn.INT32});
         model.setOperandValue(1, new Int32Array([new_height]));
         model.addOperand({type: nn.INT32});
@@ -4740,31 +4735,11 @@ describe('Unit Test/Model Test', function() {
         let new_height = 6;
         let new_width = 6;
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, height, width, depth]});
-        model.addOperand({type: nn.TENSOR_FLOAT32});
+        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, height, width, depth]});
         model.setOperandValue(1, new Int32Array([new_height]));
         model.addOperand({type: nn.TENSOR_FLOAT32});
         model.setOperandValue(2, new Int32Array([new_width]));
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth]});
-        assert.throws(() => {
-          model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2], [3]);
-        });
-      });
-    });
-
-    it('raise error when the outputs is INT32 type for "RESIZE_BILINEAR" operation', () => {
-      return nn.createModel(options).then((model) => {
-        let batches = 2;
-        let height = 3;
-        let width = 4;
-        let depth = 5;
-        let new_height = 6;
-        let new_width = 6;
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, height, width, depth]});
-        model.addOperand({type: nn.INT32});
-        model.setOperandValue(1, new Int32Array([new_height]));
-        model.addOperand({type: nn.INT32});
-        model.setOperandValue(2, new Int32Array([new_width]));
-        model.addOperand({type: nn.INT32, dimensions: [batches, new_height, new_width, depth]});
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2], [3]);
         });
@@ -4787,40 +4762,6 @@ describe('Unit Test/Model Test', function() {
         model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth]});
         assert.throws(() => {
           model.addOperation(nn.RESIZE_BILINEAR, [null], [3]);
-        });
-      });
-    });
-
-    it('raise error when the outputs is "null" for "RESIZE_BILINEAR" operation', () => {
-      return nn.createModel(options).then((model) => {
-        let batches = 2;
-        let height = 3;
-        let width = 4;
-        let depth = 5;
-        let new_height = 6;
-        let new_width = 6;
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, height, width, depth]});
-        model.addOperand({type: nn.INT32});
-        model.setOperandValue(1, new Int32Array([new_height]));
-        model.addOperand({type: nn.INT32});
-        model.setOperandValue(2, new Int32Array([new_width]));
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [batches, new_height, new_width, depth]});
-        assert.throws(() => {
-          model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2], [null]);
-        });
-      });
-    });
-
-    it('"output aspect ratio is not the same as input aspect ratio" is ok for "RESIZE_BILINEAR" operation', () => {
-      return nn.createModel(options).then((model)=>{
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 4, 4, 1]});
-        model.addOperand({type: nn.INT32});
-        model.addOperand({type: nn.INT32});
-        model.addOperand({type: nn.TENSOR_FLOAT32, dimensions: [1, 2, 2, 1]});
-        model.setOperandValue(1, new Int32Array([2]));
-        model.setOperandValue(2, new Int32Array([1]));
-        assert.doesNotThrow(() => {
-          model.addOperation(nn.RESIZE_BILINEAR, [0, 1, 2], [3]);
         });
       });
     });
