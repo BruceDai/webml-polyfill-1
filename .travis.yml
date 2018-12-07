@@ -13,7 +13,7 @@ before_install:
   - cp -fr /Volumes/*Chrome*/*Chrome* /Applications/chrome.app
   - cd /Applications/chrome.app/Contents/MacOS
   - ls -l .
-  - ./"Google Chrome"
+  - ./"Google Chrome" & > /dev/null
   - cd -
 install:
   - npm install
