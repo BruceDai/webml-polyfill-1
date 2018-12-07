@@ -7,10 +7,8 @@ matrix:
       sudo: 'required'
 before_install:
   - wget https://dl.google.com/chrome/mac/stable/GGRO/googlechrome.dmg 
-  - ls .
   - hdiutil attach googlechrome.dmg
   - cp -R "/Volumes/Google Chrome/Google Chrome.app" /Applications
-  - ls -l .
 install:
   - npm install
   - npm run build
