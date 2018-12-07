@@ -7,7 +7,8 @@ matrix:
       sudo: 'required'
 before_install:
   - wget https://dl.google.com/chrome/mac/stable/GGRO/googlechrome.dmg -O --progress
-  - ls -l *
+  - ls googlechrome.dmg
+  - ls .
   - hdiutil attach googlechrome.dmg
   - cp -fr /Volumes/*Chrome*/*Chrome* /Applications/chrome.app
 install:
