@@ -7,7 +7,7 @@ matrix:
       sudo: 'required'
 before_install:
   - brew update > /dev/null
-  - brew cask install google-chrome
+  - brew install google-chrome
 install:
   - npm install
   - npm run build
