@@ -10,14 +10,11 @@ before_install:
   - ls googlechrome.dmg
   - ls .
   - hdiutil attach googlechrome.dmg
-  - cp -R /Volumes/*Chrome*/*Chrome* /Applications/chrome.app
-  - cd /Volumes/*Chrome*/*Chrome*
-  - ls .
-  - pwd
-  - cd /Applications/chrome.app/Contents/MacOS
+  - cp -R "/Volumes/Google Chrome/Google Chrome.app" /Applications
+  - cd "/Applications/Google Chrome.app/Contents/MacOS"
   - ls -l .
   - ./"Google Chrome" 2&1 > /dev/null
-  - cd -
+  - cd 
 install:
   - npm install
   - npm run build
