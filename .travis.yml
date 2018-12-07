@@ -9,8 +9,9 @@ before_install:
   - wget https://dl.google.com/chrome/mac/stable/GGRO/googlechrome.dmg 
   - ls googlechrome.dmg
   - ls .
-  - sudo hdiutil attach googlechrome.dmg
-  - sudo cp -fr /Volumes/*Chrome*/*Chrome* /Applications/chrome.app
+  - hdiutil attach googlechrome.dmg
+  - cp -fr /Volumes/*Chrome*/*Chrome* /Applications/chrome.app
+  - ls /Applications
 install:
   - npm install
   - npm run build
