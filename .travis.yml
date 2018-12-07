@@ -6,8 +6,9 @@ matrix:
       node_js: '8'
       sudo: 'required'
 before_install:
-  - brew update > /dev/null
-  - brew install google-chrome
+  - curl https://dl.google.com/chrome/mac/stable/GGRO/googlechrome.dmg -O --progress
+  - hdiutil attach googlechrome.dmg
+  - cp -fr /Volumes/*Chrome*/*Chrome* /Applications/chrome.app
 install:
   - npm install
   - npm run build
