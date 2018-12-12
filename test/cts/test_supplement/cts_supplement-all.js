@@ -4313,8 +4313,8 @@ describe('CTS Supplement Test', function() {
     model.addOperand(type2);
     const width = operandIndex++;
     model.addOperand(type2);
-    model.setOperandValue(height, new Int32Array([3]));
-    model.setOperandValue(width, new Int32Array([3]));
+    model.setOperandValue(height, new Int32Array([2]));
+    model.setOperandValue(width, new Int32Array([2]));
     model.addOperation(nn.RESIZE_BILINEAR, [op1, height, width], [op2]);
     model.identifyInputsAndOutputs([op1], [op2]);
     await model.finish();
@@ -4350,8 +4350,8 @@ describe('CTS Supplement Test', function() {
     model.addOperand(type2);
     const width = operandIndex++;
     model.addOperand(type2);
-    model.setOperandValue(height, new Int32Array([3]));
-    model.setOperandValue(width, new Int32Array([3]));
+    model.setOperandValue(height, new Int32Array([2]));
+    model.setOperandValue(width, new Int32Array([2]));
     model.addOperation(nn.RESIZE_BILINEAR, [op1, height, width], [op2]);
     model.identifyInputsAndOutputs([op1], [op2]);
     await model.finish();
@@ -4387,8 +4387,8 @@ describe('CTS Supplement Test', function() {
     model.addOperand(type2);
     const width = operandIndex++;
     model.addOperand(type2);
-    model.setOperandValue(height, new Int32Array([3]));
-    model.setOperandValue(width, new Int32Array([3]));
+    model.setOperandValue(height, new Int32Array([2]));
+    model.setOperandValue(width, new Int32Array([2]));
     model.addOperation(nn.RESIZE_BILINEAR, [op1, height, width], [op2]);
     model.identifyInputsAndOutputs([op1], [op2]);
     await model.finish();
@@ -4424,8 +4424,8 @@ describe('CTS Supplement Test', function() {
     model.addOperand(type2);
     const width = operandIndex++;
     model.addOperand(type2);
-    model.setOperandValue(height, new Int32Array([3]));
-    model.setOperandValue(width, new Int32Array([3]));
+    model.setOperandValue(height, new Int32Array([2]));
+    model.setOperandValue(width, new Int32Array([2]));
     model.addOperation(nn.RESIZE_BILINEAR, [op1, height, width], [op2]);
     model.identifyInputsAndOutputs([op1], [op2]);
     await model.finish();
@@ -4499,7 +4499,7 @@ describe('CTS Supplement Test', function() {
     const width = operandIndex++;
     model.addOperand(type2);
     model.setOperandValue(height, new Int32Array([3]));
-    model.setOperandValue(width, new Int32Array([3]));
+    model.setOperandValue(width, new Int32Array([2]));
     model.addOperation(nn.RESIZE_BILINEAR, [op1, height, width], [op2]);
     model.identifyInputsAndOutputs([op1], [op2]);
     await model.finish();
