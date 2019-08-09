@@ -34,7 +34,7 @@ const startPredictCamera = async () => {
       let ret = await utils.predict(videoElement);
       updateResult(ret);
       stats.end();
-      setTimeout(startPredictCamera, 0);
+      setTimeout(startPredictCamera, 5);
     } catch (e) {
       errorHandler(e);
     }
