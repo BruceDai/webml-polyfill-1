@@ -1236,6 +1236,26 @@ export default class PreparedModel {
                                 input.runtimeshape, input.value, 
                                 output.runtimeshape, output.value);
       } break;
+      case OperationCode.ARGMAX: {
+        allParametersPresent(2, 1);
+        let input1 = operands[inputs[0]];
+        let input2 = operands[inputs[1]];
+
+        let operand = {
+          type: OperandCode.TENSOR_INT32,
+          dimensions: [1],
+          numberOfConsumers: 0,
+          lifetime: OperandLifetime.CONSTANT_REFERENCE,
+          value: [input2.value[0]]
+        };
+
+        let axisData = this._allocateTensor(operand);
+        let output = operands[outputs[0]];
+
+        nn_ops.argMaxFloat32(input1.runtimeshape, input1.value,
+                             axisData, output.runtimeshape, output.value);
+        nn_ops._free(axisData);
+      } break;
       default: {
         throw new Error(`Operation ${op} is not supported`);
       }
