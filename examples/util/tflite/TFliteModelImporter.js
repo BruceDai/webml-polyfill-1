@@ -25,7 +25,7 @@ class TFliteModelImporter {
     }
   }
 
-  async createCompiledModel() {
+  async createCompiledModel(){
     let options = {
       backend: this._backend,
       eager: eager || false,
@@ -37,10 +37,8 @@ class TFliteModelImporter {
     this._addOpsAndParams();
     this._addInputsOutputs();
     this._setDeQuantizeParams();
-
     await this._model.finish();
     this._compilation = await this._model.createCompilation();
-
     let start = performance.now();
     this._compilation.setPreference(getPreferCode(this._backend, this._prefer));
     await this._compilation.finish();
@@ -79,7 +77,7 @@ class TFliteModelImporter {
         case tflite.TensorType.INT64: {
           // dummy operand. not work on NNAPI
           this._tensorIds.push(
-             this._addOperand({type: this._nn.TENSOR_INT32, dimensions: [1,513,513]}));
+             this._addOperand({type: this._nn.TENSOR_INT32, dimensions: tensor.shapeArray()}));
           typedArray = Int32Array;
           continue;
         }
@@ -414,7 +412,16 @@ class TFliteModelImporter {
           let axis = this._operands[inputs[1]].value[0];
           let operandId = this._addScalarInt32(axis);
           inputs[1] = operandId;
-          opType = this._nn.ARGMAX;
+          if (this._nn.ARGMAX === undefined) {
+            let currentprefertext = {
+              fast: 'FAST_SINGLE_ANSWER',
+              sustained: 'SUSTAINED_SPEED',
+              low: 'LOW_POWER',  
+            }[this._prefer];
+            throw new Error(`Operator type ARGMAX is not supported by WebNN\(${currentprefertext}\), use dual backend for test.`);
+          } else {
+            opType = this._nn.ARGMAX;
+          }
           // inputs = [inputs[0]];
 
           // const nChannels = 21;
@@ -439,6 +446,13 @@ class TFliteModelImporter {
           // this.argmaxOutputs = outputs = [tensorId];
 
           // opType = this._nn.CONV_2D;
+
+
+
+          // // check argmax support status
+          // if (shouldOffloadOpByPolyfill(this._backend, this._prefer, opType)) {
+          //   throw new Error(`operator type ARGMAX is not supported, use dual backend for test`);
+          // }
         } break;
         default: {
           throw new Error(`operator type ${opCode} is not supported.`);

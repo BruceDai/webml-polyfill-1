@@ -21,7 +21,7 @@ class Renderer {
     this._imageSource = null;
 
     // UI state
-    this._effect = 'fill';//label fill
+    this._effect = 'label';//'fill';//
     this._zoom = 1;
     this._bgColor = [57, 135, 189];
     this._colorMapAlpha = 0.7;
@@ -645,21 +645,21 @@ class Renderer {
     // Display color labels
     if (this._effect === 'label') {
       this._segMap = newSegMap;
+      console.time("argmax time");
       this._predictions = this._argmaxClippedSegMap(newSegMap);
+      console.timeEnd("argmax time");
+
       this.utils.bindTexture('predictions');
       this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
       this.gl.texImage2D(
         this.gl.TEXTURE_2D,
         0,
-        // this.gl.ALPHA,
-        this.gl.R32F,
+        this.gl.ALPHA,
         this._clippedSize[0],
         this._clippedSize[1],
         0,
-        // this.gl.ALPHA,
-        // this.gl.UNSIGNED_BYTE,
-        this.gl.RED,
-        this.gl.FLOAT,
+        this.gl.ALPHA,
+        this.gl.UNSIGNED_BYTE,
         this._predictions
       );
       this._drawColorLabel();
@@ -668,11 +668,25 @@ class Renderer {
     // Person segmentation
     else {
       this._segMap = newSegMap;
+      console.time("argmax time");
       this._predictions = this._argmaxClippedSegMapPerson(newSegMap);
+      console.timeEnd("argmax time");
+
       if (this._guidedFilterRadius === 0) {
         // guided filter is disabled
         this.utils.bindTexture('predictions');
         this.gl.pixelStorei(this.gl.UNPACK_ALIGNMENT, 1);
+        // this.gl.texImage2D(
+        //   this.gl.TEXTURE_2D,
+        //   0,
+        //   this.gl.ALPHA,
+        //   this._clippedSize[0],
+        //   this._clippedSize[1],
+        //   0,
+        //   this.gl.ALPHA,
+        //   this.gl.UNSIGNED_BYTE,
+        //   this._predictions
+        // );
         this.gl.texImage2D(
           this.gl.TEXTURE_2D,
           0,
@@ -822,26 +836,11 @@ class Renderer {
     const clippedHeight = this._clippedSize[1];
     const clippedWidth = this._clippedSize[0];
     const outputWidth = segmap.outputShape[1];
-    // const numClasses = segmap.outputShape[2];
     const data = segmap.data;
-    // const mask = new Uint8Array(clippedHeight * clippedWidth);
-    const mask = new Int32Array(clippedHeight * clippedWidth);
+    const mask = new Uint8Array(clippedHeight * clippedWidth);
 
     let i = 0;
     for (let h = 0; h < clippedHeight; h++) {
-      // const starth = h * outputWidth * numClasses;
-      // for (let w = 0; w < clippedWidth; w++) {
-      //   const startw = starth + w * numClasses;
-      //   let maxVal = Number.MIN_SAFE_INTEGER;
-      //   let maxIdx = 0;
-      //   for (let n = 0; n < numClasses; n++) {
-      //     if (data[startw + n] > maxVal) {
-      //       maxVal = data[startw + n];
-      //       maxIdx = n;
-      //     }
-      //   }
-      //   mask[i++] = maxIdx;
-      // }
       for (let w = 0; w < clippedWidth; w++) {
         mask[i++] = data[h * outputWidth + w];
       }
@@ -856,12 +855,12 @@ class Renderer {
     const clippedWidth = this._clippedSize[0];
     const outputWidth = segmap.outputShape[1];
     const data = segmap.data;
-    const mask = new Float32Array(clippedHeight * clippedWidth);//Int32Array Float32Array
+    const mask = new Float32Array(clippedHeight * clippedWidth);
 
     let i = 0;
     for (let h = 0; h < clippedHeight; h++) {
       for (let w = 0; w < clippedWidth; w++) {
-        mask[i++] = data[h * outputWidth + w] == 15 ? 255 : 0;
+        mask[i++] = data[h * outputWidth + w];//== 15 ? 255 : 0;
       }
     }
 

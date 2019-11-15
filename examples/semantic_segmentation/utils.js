@@ -1,6 +1,7 @@
 class Utils {
   constructor() {
-    this.tfModel;
+    this.rawModel
+    // this.tfModel;
     this.labels;
     this.model;
     this.inputTensor;
@@ -37,15 +38,44 @@ class Utils {
     this.postOptions = newModel.postOptions || {};
     this.numClasses = newModel.numClasses;
     this.inputTensor = new Float32Array(newModel.inputSize.reduce((x,y) => x*y));
-    this.outputTensor = new Float32Array(newModel.outputSize.reduce((x,y) => x*y));
+
+
 
     let result = await this.loadModelAndLabels(this.modelFile, this.labelsFile);
     this.labels = result.text.split('\n');
     console.log(`labels: ${this.labels}`);
-    let flatBuffer = new flatbuffers.ByteBuffer(result.bytes);
-    this.tfModel = tflite.Model.getRootAsModel(flatBuffer);
-    printTfLiteModel(this.tfModel);
-
+    // let flatBuffer = new flatbuffers.ByteBuffer(result.bytes);
+    // this.tfModel = tflite.Model.getRootAsModel(flatBuffer);
+    // printTfLiteModel(this.tfModel);
+    switch (this.modelFile.split('.').pop()) {
+      case 'tflite':
+        this.outputTensor = new Int32Array(newModel.outputSize.reduce((x,y) => x*y));//Int32Array Float32Array
+        let flatBuffer = new flatbuffers.ByteBuffer(result.bytes);
+        this.rawModel = tflite.Model.getRootAsModel(flatBuffer);
+        this.rawModel._rawFormat = 'TFLITE';
+        printTfLiteModel(this.rawModel);
+        break;
+      case 'onnx':
+        this.outputTensor = new Float32Array(newModel.outputSize.reduce((x,y) => x*y));//Int32Array Float32Array
+        let err = onnx.ModelProto.verify(result.bytes);
+        if (err) {
+          throw new Error(`Invalid model ${err}`);
+        }
+        this.rawModel = onnx.ModelProto.decode(result.bytes);
+        this.rawModel._rawFormat = 'ONNX';
+        printOnnxModel(this.rawModel);
+        break;
+      case 'bin':
+        this.outputTensor = new Float32Array(newModel.outputSize.reduce((x,y) => x*y));//Int32Array Float32Array
+        const networkFile = this.modelFile.replace(/bin$/, 'xml');
+        const networkText = await this.loadUrl(networkFile, false, false);
+        const weightsBuffer = result.bytes.buffer;
+        this.rawModel = new OpenVINOModel(networkText, weightsBuffer);
+        this.rawModel._rawFormat = 'OPENVINO';
+        break;
+      default:
+        throw new Error('Unrecognized model format');
+    }
     this.loaded = true;
     return 'SUCCESS';
   }
@@ -62,12 +92,26 @@ class Utils {
     this.backend = backend;
     this.prefer = prefer;
     let kwargs = {
-      rawModel: this.tfModel,
+      rawModel: this.rawModel,
       backend: backend,
       prefer: prefer,
     };
-    this.model = new TFliteModelImporter(kwargs);
+    // supportedOps = getDefaultSupportedOps(backend, prefer);
+    // this.model = new TFliteModelImporter(kwargs);
+    switch (this.rawModel._rawFormat) {
+      case 'TFLITE':
+        this.model = new TFliteModelImporter(kwargs);
+        break;
+      case 'ONNX':
+        this.model = new OnnxModelImporter(kwargs);
+        break;
+      case 'OPENVINO':
+        this.model = new OpenVINOModelImporter(kwargs);
+        break;
+    }
+
     let result = await this.model.createCompiledModel();
+
     console.log(`compilation result: ${result}`);
     let start = performance.now();
     result = await this.model.compute([this.inputTensor], [this.outputTensor]);
