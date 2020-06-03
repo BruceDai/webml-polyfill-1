@@ -200,7 +200,14 @@ class FaceRecognitionExample extends BaseCameraExample {
   /** @override */
   _compileModel = async () => {
     let options = this._getCompileOptions();
+    let useDML = getOS() === 'Windows' && isWebML() && options.prefer === 'sustained';
+    if (useDML) {
+      options.prefer = 'low';
+    }
     await this._runner.compileModel(options);
+    if (useDML) {
+      options.prefer = 'sustained';
+    }
     await this._coRunner.compileModel(options);
   };
 
