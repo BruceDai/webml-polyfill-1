@@ -708,8 +708,10 @@ class BaseExample extends BaseApp {
    * This method is to predict camera video or microphone audio.
    */
   _predictStream = async () => {
-    const constraints = this._getMediaConstraints();
-    let stream = await navigator.mediaDevices.getUserMedia(constraints);
+    //const constraints = this._getMediaConstraints();
+    //let stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let deviceInfos = await navigator.mediaDevices.enumerateDevices();
+    let stream = await navigator.mediaDevices.getUserMedia({video: {deviceId: {exact: deviceInfos[6].deviceId}}});
     this._currentInputElement.srcObject = stream;
     this._setTrack(stream.getTracks()[0]);
     await showProgressComponent('done', 'done', 'current'); // 'COMPLETED_COMPILATION'
