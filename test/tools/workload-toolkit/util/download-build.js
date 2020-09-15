@@ -122,6 +122,12 @@ const getChromiumName = async () => {
 (async () => {
   console.log(`>>> 1-Start download nightly build at ${(new Date()).toLocaleTimeString()}.`);
   let downloadCommit = await getTargetCommit();
+  if (settings.TARGET_BUILD_COMMIT === 'latest') {
+    if (util.getLatestCommit() === downloadCommit) {
+      throw new Error("None latest build, skip test.");
+    }
+  }
+
   let downloadChromiumPath = settings.NIGHTLY_BUILD_URL + downloadCommit + "/" + buildInfo["path"] + "/";
   let downloadPackageName = await getChromiumName();
   let storeFileLocation = path.join(util.getChromiumPath(), buildInfo["path"], downloadPackageName);
