@@ -75,7 +75,7 @@ def create(opath, file_dict, file_list, describe):
     all_jsTest_file.write("describe('" + describe + "', function() {\n")
     all_jsTest_file.write("  this.timeout(20000);\n")
     all_jsTest_file.write("  const assert = chai.assert;\n")
-    all_jsTest_file.write("  const nn = navigator.ml.getNeuralNetworkContext();\n")
+    all_jsTest_file.write("  const nn = navigator.ml.getNeuralNetworkContext('v2');\n")
     all_jsTest_file.write("\n")
 
   for (file_num, file_name) in enumerate(file_list):
@@ -102,15 +102,15 @@ if __name__ == "__main__":
   if not os.path.exists(output_path_root):
     os.makedirs(output_path_root)
 
-  (output_file_all_path, output_file_all_name) = os.path.split(args_all)
-  if output_file_all_path == "":
-    output_file_all = os.path.join(path_root, args_all)
-  else :
-    output_file_all = args_all
+  # (output_file_all_path, output_file_all_name) = os.path.split(args_all)
+  # if output_file_all_path == "":
+  #   output_file_all = os.path.join(path_root, args_all)
+  # else :
+  #   output_file_all = args_all
 
-  describeString = "CTS"
+  # describeString = "CTS"
 
-  file_dict_all = dict()
+  # file_dict_all = dict()
 
   if not args_transfer == "-":
     output_path_transfer_clear = os.path.join(output_path_root, "cts")
@@ -129,47 +129,47 @@ if __name__ == "__main__":
     print ("Transfer nn test case to js test case....\n")
     transfer(args_transfer, output_path_transfer, cts_file_names)
 
-  if not args_cts == "-":
-    print ("Scan test cts directory....")
-    cts_file_dict = get_file_names(args_cts, ".js")
-    file_dict_all.update(cts_file_dict)
+  # if not args_cts == "-":
+  #   print ("Scan test cts directory....")
+  #   cts_file_dict = get_file_names(args_cts, ".js")
+  #   file_dict_all.update(cts_file_dict)
 
-  if not args_supplement == "-":
-    print ("Scan test supplement directory....")
+  # if not args_supplement == "-":
+  #   print ("Scan test supplement directory....")
 
-    describeString = "CTS Supplement Test"
+  #   describeString = "CTS Supplement Test"
 
-    supplement_file_dict = get_file_names(args_supplement, ".js")
-    file_dict_all.update(supplement_file_dict)
+  #   supplement_file_dict = get_file_names(args_supplement, ".js")
+  #   file_dict_all.update(supplement_file_dict)
 
-  if not args_plus == "-":
-    print ("Scan test plus directory....")
-    plus_file_dict = get_file_names(args_plus, ".js")
-    file_dict_all.update(plus_file_dict)
+  # if not args_plus == "-":
+  #   print ("Scan test plus directory....")
+  #   plus_file_dict = get_file_names(args_plus, ".js")
+  #   file_dict_all.update(plus_file_dict)
 
-  if not args_all == "-":
-    skip_files = ["cts-all.js", "cts_supplement-all.js", "conv_65_65_96.js"]
-    (args_all_path, args_all_name) = os.path.split(args_all)
-    skip_files.append(args_all_name)
+  # if not args_all == "-":
+  #   skip_files = ["cts-all.js", "cts_supplement-all.js", "conv_65_65_96.js"]
+  #   (args_all_path, args_all_name) = os.path.split(args_all)
+  #   skip_files.append(args_all_name)
 
-    for name in skip_files:
-      if name in file_dict_all:
-        print ("Skip creating file name: %s"%file_dict_all[name])
-        del file_dict_all[name]
+  #   for name in skip_files:
+  #     if name in file_dict_all:
+  #       print ("Skip creating file name: %s"%file_dict_all[name])
+  #       del file_dict_all[name]
 
-    print ("Reordering by name....")
-    file_list = sorted(file_dict_all.keys())
+  #   print ("Reordering by name....")
+  #   file_list = sorted(file_dict_all.keys())
 
-    print ("Create all-in-one test case file: %s"%str(output_file_all))
-    create(output_file_all, file_dict_all, file_list, describeString)
+  #   print ("Create all-in-one test case file: %s"%str(output_file_all))
+  #   create(output_file_all, file_dict_all, file_list, describeString)
 
-  if not args_transfer == "-":
-    if not args_all == "-":
-      print ("Completed to transfer Android CTS spec files and create all-in-one test case file!")
-    else :
-      print ("Completed to transfer Android CTS spec files!")
-  else :
-    if not args_all == "-":
-      print ("Completed to create all-in-one test case file!")
-    else :
-      print ("Nothing to do!! get info with 'npm run info' command.")
+  # if not args_transfer == "-":
+  #   if not args_all == "-":
+  #     print ("Completed to transfer Android CTS spec files and create all-in-one test case file!")
+  #   else :
+  #     print ("Completed to transfer Android CTS spec files!")
+  # else :
+  #   if not args_all == "-":
+  #     print ("Completed to create all-in-one test case file!")
+  #   else :
+  #     print ("Nothing to do!! get info with 'npm run info' command.")
