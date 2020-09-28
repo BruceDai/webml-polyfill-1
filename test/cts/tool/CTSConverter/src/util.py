@@ -22,47 +22,69 @@ class OperandTypeMapping(NoValue):
     TENSOR_QUANT8_ASYMM = 'tensor-quant8-asymm'
 
 
-class OperationsMapping(NoValue):
-    ADD = 'add'
-    AVERAGE_POOL_2D = 'averagePool2d'
-    CONCATENATION = 'concat'
-    CONV_2D = 'conv2d'
-    DEPTHWISE_CONV_2D = 'conv2d'
-    # DEPTH_TO_SPACE = 
-    # DEQUANTIZE = 
-    # EMBEDDING_LOOKUP = 
-    # FLOOR = 
-    # FULLY_CONNECTED = 
-    # HASHTABLE_LOOKUP = 
-    # L2_NORMALIZATION = 
-    # L2_POOL_2D = 
-    # LOCAL_RESPONSE_NORMALIZATION = 
-    # LOGISTIC = 
-    # LSH_PROJECTION = 
-    # LSTM = 
-    MAX_POOL_2D = 'maxPool2d'
-    MUL = 'mul'
-    RELU = 'relu'
-    # RELU1 = 
-    # RELU6 = 
-    RESHAPE = 'reshape'
-    # RESIZE_BILINEAR = 
-    # RNN = 
-    SOFTMAX = 'softmax'
-    # SPACE_TO_DEPTH = 
-    # SVDF = 
-    # TANH = 
-    # BATCH_TO_SPACE_ND = 
-    TRANSPOSE = 'transpose'
-    # ARGMAX = 
-    # MAXIMUM = 
-    # PRELU =  
+# class OperationsMapping(NoValue):
+#     ADD = 'add'
+#     AVERAGE_POOL_2D = 'averagePool2d'
+#     CONCATENATION = 'concat'
+#     CONV_2D = 'conv2d'
+#     DEPTHWISE_CONV_2D = 'conv2d'
+#     # DEPTH_TO_SPACE = 
+#     # DEQUANTIZE = 
+#     # EMBEDDING_LOOKUP = 
+#     # FLOOR = 
+#     # FULLY_CONNECTED = 
+#     # HASHTABLE_LOOKUP = 
+#     # L2_NORMALIZATION = 
+#     # L2_POOL_2D = 
+#     # LOCAL_RESPONSE_NORMALIZATION = 
+#     # LOGISTIC = 
+#     # LSH_PROJECTION = 
+#     # LSTM = 
+#     MAX_POOL_2D = 'maxPool2d'
+#     MUL = 'mul'
+#     RELU = 'relu'
+#     # RELU1 = 
+#     # RELU6 = 
+#     RESHAPE = 'reshape'
+#     # RESIZE_BILINEAR = 
+#     # RNN = 
+#     SOFTMAX = 'softmax'
+#     # SPACE_TO_DEPTH = 
+#     # SVDF = 
+#     # TANH = 
+#     # BATCH_TO_SPACE_ND = 
+#     TRANSPOSE = 'transpose'
+#     # ARGMAX = 
+#     # MAXIMUM = 
+#     # PRELU =  
 
 
-class OperationsParmLen(IntEnum):
-    ADD = 1 # activation
-    CONV_2D_EXPLICIT = 7 # left padding, right padding, top padding, bottom padding, stride width, stride height, activation
-    CONV_2D_IMPLICIT = 4 # padding scheme, stride width, stride height, activation
+# class OperationsParmLen(IntEnum):
+#     # activation
+#     ADD = 1
+
+#     # left padding, right padding, top padding, bottom padding, stride width,
+#     # stride height, activation
+#     CONV_2D_EXPLICIT = 9
+
+#     # padding scheme, stride width, stride height, activation
+#     CONV_2D_IMPLICIT = 6
+
+
+OperationsInfoDict = {
+    'ADD': {
+        'equalOp': 'add',
+        'parmLen': 1
+    },
+    'CONV_2D': {
+        'equalOp': 'conv2d',
+        'parmLen': {
+            'implicit': 6, 
+            'explicit': 9
+        },
+        'useBias': True # optional
+    }
+}
 
 
 class PaddingCode(IntEnum):
@@ -97,7 +119,8 @@ def WriteMochaTestCaseHeads(fileName):
     WriteLineToFile(comment.format(spec_file = specFileBase), fileName)
     WriteLineToFile("describe('CTS-v2', function() {", fileName)
     WriteLineToFile("  const assert = chai.assert;", fileName)
-    WriteLineToFile("  const nn = navigator.ml.getNeuralNetworkContext('v2');", fileName)
+    WriteLineToFile("  const nn = navigator.ml.getNeuralNetworkContext('v2');",
+                    fileName)
 
 
 def CheckReluSupported(reluType):
@@ -114,7 +137,8 @@ def GetOperandDesc(t, filter = False):
 
     if filter:
         # change [depth_out, filter_height, filter_width, depth_in]
-        # to required "nhwc": filter tensor: [height, width, input_channels/groups, output_channels]
+        # to required "nhwc": filter tensor: 
+        # [height, width, input_channels/groups, output_channels]
         depthOut = dimensions[0]
         dimensions = dimensions[1:4]
         dimensions.append(depthOut)    
@@ -129,20 +153,58 @@ def GetOperandDesc(t, filter = False):
                 ', '.join(dimensions))
     else:
         if t.extraParams is None or t.extraParams.hide:
-            return "{type: '%s', dimensions: [%s], scale: %s, zeroPoint: %d}" % (
-                OperandTypeMapping[t.type].value, 
+            return "{type: '%s', dimensions: [%s], scale: %s, zeroPoint: %d}" \
+             % (OperandTypeMapping[t.type].value, 
                 ', '.join(dimensions), 
                 t.scale, 
                 t.zeroPoint)
         else:
-            return "{type: '%s', dimensions: [%s]}" % (
-                OperandTypeMapping[t.type].value, 
-                ', '.join(dimensions))
+            return "{type: '%s', dimensions: [%s]}" % \
+             (OperandTypeMapping[t.type].value, 
+              ', '.join(dimensions))
 
 
 def WriteConstantOprandLine(op, fileName, filter = False):
-    WriteLineToFile("    const %s = nn.constant(%s, new %s(%s));" % (
-        op,
-        GetOperandDesc(op.type, filter),
-        TypedArrayTypeMapping[op.type.type].value,
-        op.value), fileName) # op.value
+    WriteLineToFile("    const %s = nn.constant(%s, new %s(%s));" % \
+                    (op,
+                     GetOperandDesc(op.type, filter),
+                     TypedArrayTypeMapping[op.type.type].value,
+                     op.value), fileName)
+
+def WriteConv2DWithAddOperationsLines(paramList, padding, strides,
+        dilations, groups, layout, bRelu, biasOp, outPutOp, fileName):
+    paramList.append('padding')
+    WriteLineToFile('    const padding = %s;' % padding, fileName)
+
+    # strides
+    paramList.append('strides')
+    WriteLineToFile('    const strides = %s;' % strides, fileName)
+
+    # dilations
+    paramList.append('dilations')
+    WriteLineToFile('    const dilations = %s;' % dilations, fileName)
+
+    # groups
+    paramList.append('groups')
+    WriteLineToFile('    const groups = %d;' % groups, fileName)
+
+    # layout
+    paramList.append('layout')
+    WriteLineToFile("    const layout = '%s';" % layout, fileName)
+
+    # nn.conv2d
+    WriteLineToFile('    const intermediateOutput = nn.conv2d(%s);' % \
+                    ', '.join(paramList), fileName)
+
+    # append nn.add for computing with bias
+    WriteConstantOprandLine(biasOp, fileName)
+
+    # TODO check relu whether be supported, if true add nn.relu, 
+    if not bRelu:
+        WriteLineToFile('    const %s = nn.add(intermediateOutput, %s);' % \
+                        (outPutOp, biasOp), fileName)
+    else:
+        WriteLineToFile('    const intermediateOutput2 ='
+                        'nn.add(intermediateOutput, %s);' %  biasOp, fileName)
+        WriteLineToFile('    const %s = nn.relu(intermediateOutput2);' % \ 
+                        outPutOp, fileName)

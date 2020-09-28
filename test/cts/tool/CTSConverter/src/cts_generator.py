@@ -310,14 +310,10 @@ TEST_AVAILABLE_SINCE({version}, {test_name}, {namespace}::{create_model_name})\n
         version=example.model.version,
         log_file=tg.FileNames.logFile), test_fd)
 
-
-def DumpJSTest(model, example, js_fd):
+def CheckActions(model, example):
     assert model.compiled
     if model.dumped:
-        return
-
-    # TODO: Check Relu Supported
-
+        return    
     # check: types
     for t in model.GetTypes():
         if t.type not in Configuration.support_types and \
@@ -334,18 +330,6 @@ def DumpJSTest(model, example, js_fd):
             if t.type == "FLOAT16":
                 t.type = "FLOAT32"
 
-    '''
-    # select specifying type models
-    select_specifying_flag = False
-    if model.operations[0].optype in ["CONV_2D", "DEPTHWISE_CONV_2D"]:
-        if model.operands[0].type.type == "TENSOR_QUANT8_ASYMM_SIGNED" and \
-           model.operands[1].type.type == "TENSOR_QUANT8_SYMM_PER_CHANNEL":
-            select_specifying_flag = True
-
-    if not select_specifying_flag:
-        util.WriteLineToFile("    skip not select types: %s" % example.examplesName, sys.stderr)
-        return
-    '''
 
     # support layout: NHWC
     for p in example.model.GetParameters():
@@ -461,6 +445,18 @@ def DumpJSTest(model, example, js_fd):
                        model.operands[0].type.scale, model.operands[1].type.scale), sys.stderr)
                 return
 
+
+def DumpJSTest(model, example, js_fd):
+    CheckActions(model, example)
+
+    androidNNOpType = model.operations[0].optype
+
+    # TODO: Check using biase
+    bBiase = util.GetOperationComputeBias(opType)
+
+    # TODO: Check using relu activation
+    bRelu = False
+
     # set js test names
     Configuration.example_count += 1
 
@@ -483,7 +479,14 @@ def DumpJSTest(model, example, js_fd):
 
     util.WriteLineToFile("", js_fd)
 
-    # TODO it description of plusing relu / add 
+    purpose = ""
+
+    if bBiase:
+        purpose = "+ add operation "
+
+    if bRelu:
+         purpose = "+ relu operation "
+
     for inputFeedDict, outputFeedDict in example.feedDicts:
         if Configuration.single_example_flag:
             if test_index == "":
@@ -501,16 +504,15 @@ def DumpJSTest(model, example, js_fd):
 
         # create input
         parametersV2List = []
-
-        for nnInOp in example.model.GetInputs():
+        androidInputList = example.model.GetInputs()
+        for nnInOp in androidInputsList:
             parametersV2List.append(nnInOp.name)
             util.WriteLineToFile("    const %s = nn.input('%s', %s);" % (nnInOp, nnInOp, util.GetOperandDesc(nnInOp.type)), js_fd)
 
         # only for options with one output
         # invoke nn.<operations_name> function
         nnOutOp = example.model.GetOutputs()[0]
-        androidNNOpType = model.operations[0].optype
-        webNNOpType = util.OperationsMapping[androidNNOpType].value
+        webNNOpType = util.OperationsInfoDict[androidNNOpType]
 
         androidPramaterList = example.model.GetParameters()
         androidParametersLen = len(androidPramaterList)
@@ -529,8 +531,8 @@ def DumpJSTest(model, example, js_fd):
         elif androidNNOpType == 'CONV_2D':
             # print(androidPramaterList[0].value)
             # print(inputFeedDict)
-            if androidParametersLen == util.OperationsParmLen.CONV_2D_IMPLICIT + 2:
-                # count in filter and bias, using nn.constant to create filter and bias
+            if androidParametersLen == util.OperationsParmLen.CONV_2D_IMPLICIT:
+                # filter and bias params, using nn.constant to create filter and bias
                 filterOp = androidPramaterList[0]
                 parametersV2List.append(filterOp.name)
                 util.WriteConstantOprandLine(filterOp, js_fd, True)
@@ -541,39 +543,40 @@ def DumpJSTest(model, example, js_fd):
                 else:
                     # TODO padding SAME
                     pass
-                parametersV2List.append('padding')
-                util.WriteLineToFile('    const padding = %s;' % padding, js_fd)
-
-                # strides
-                strides = [androidPramaterList[4].value[0], androidPramaterList[3].value[0]] # [stride_height, stride_width]
-                parametersV2List.append('strides')
-                util.WriteLineToFile('    const strides = %s;' % strides, js_fd)
-
-                # dilations
-                dilations = [1, 1]
-                parametersV2List.append('dilations')
-                util.WriteLineToFile('    const dilations = %s;' % dilations, js_fd)
-
-                # groups
-                groups = 1
-                parametersV2List.append('groups')
-                util.WriteLineToFile('    const groups = %d;' % groups, js_fd)
-
-                # layout
-                layout = 'nhwc'
-                parametersV2List.append('layout')
-                util.WriteLineToFile("    const layout = '%s';" % layout, js_fd)
-
-                # nn.conv2d
-                util.WriteLineToFile('    const intermediateOutput = nn.conv2d(%s);' % ', '.join(parametersV2List), js_fd)
-
-                # plus nn.add for computing with bias
-                biasOp = androidPramaterList[1]
-                util.WriteConstantOprandLine(biasOp, js_fd)
-                util.WriteLineToFile('    const %s = nn.add(intermediateOutput, %s);' % (nnOutOp, biasOp), js_fd)
-                                                             
-            elif androidParametersLen == util.OperationsParmLen.CONV_2D_EXPLICIT + 2:
-                # count in filter and bias, using nn.constant to create filter and bias
+                
+                # strides 
+                # webml-polyfill:
+                #   [stride_width, stride_height]
+                # reorder to
+                # webnn:
+                #   [stride_height, stride_width]
+                strides = [
+                    androidPramaterList[4].value[0],
+                    androidPramaterList[3].value[0]]
+                util.WriteConv2DWithAddOperationsLines(parametersV2List,
+                    padding, strides, [1, 1], 1, 'nhwc',
+                    androidPramaterList[1], nnOutOp, js_fd)
+            elif androidParametersLen == util.OperationsParmLen.CONV_2D_IMPLICIT - 2:
+                # inputs count in filter and bias params
+                # padding
+                if androidPramaterList[2].value[0] == util.PaddingCode.VALID:
+                    padding = [0, 0, 0, 0]
+                else:
+                    # TODO padding SAME
+                    pass
+                
+                # strides 
+                # webml-polyfill:
+                #   [stride_width, stride_height]
+                # reorder to
+                # webnn:
+                #   [stride_height, stride_width]
+                strides = [
+                    androidPramaterList[4].value[0],
+                    androidPramaterList[3].value[0]]
+                biasOp = androidInputList[2]                                                                        
+            elif androidParametersLen == util.OperationsParmLen.CONV_2D_EXPLICIT:
+                # filter and bias params, using nn.constant to create filter and bias
                 filterOp = androidPramaterList[0]
                 parametersV2List.append(filterOp.name)
                 util.WriteConstantOprandLine(filterOp, js_fd, True)
@@ -581,17 +584,58 @@ def DumpJSTest(model, example, js_fd):
                 parametersV2List.append(biasOp.name)
                 util.WriteConstantOprandLine(biasOp, js_fd)
 
-                # explicit padding
-                padding = [androidPramaterList[2].value for index in range(2, 6)]
+                # explicit padding 
+                # webml-polyfill: 
+                #   [left, right, top, bottom]
+                # reorder to
+                # webnn:
+                #   [top, bottom, left, right]
+                # align [beginning_height, ending_height, beginning_width, ending_width]
+                padding = [
+                    androidPramaterList[4].value,
+                    androidPramaterList[5].value,
+                    androidPramaterList[2].value,
+                    androidPramaterList[3].value]
 
+                  # strides 
+                # webml-polyfill:
+                #   [stride_width, stride_height]
+                # reorder to
+                # webnn:
+                #   [stride_height, stride_width]
+                strides = [
+                    androidPramaterList[7].value[0],
+                    androidPramaterList[6].value[0]]
+                biasOp = androidPramaterList[1]
+            elif androidParametersLen == util.OperationsParmLen.CONV_2D_EXPLICIT - 2:
+                # inputs count in filter and bias params
 
-        # TODO check relu type of model.GetParameters() case (operation) by case (operation)
-        # if FUSED_NONE, skip add relu  
-        # else FUSED_RELU, need add relu code
+                # explicit padding 
+                # webml-polyfill: 
+                #   [left, right, top, bottom]
+                # reorder to
+                # webnn:
+                #   [top, bottom, left, right]
+                # align [beginning_height, ending_height, beginning_width, ending_width]
+                padding = [
+                    androidPramaterList[2].value,
+                    androidPramaterList[3].value,
+                    androidPramaterList[0].value,
+                    androidPramaterList[1].value]
 
-        # outputsNames = example.model.GetOutputs()
-        # outputList = ["{name: '%s', operand: %s}" % (n, n) for n in outputsNames]
-        # util.WriteLineToFile("    const model = await nn.createModel([%s]);" % ','.join(outputList), js_fd)
+                  # strides 
+                # webml-polyfill:
+                #   [stride_width, stride_height]
+                # reorder to
+                # webnn:
+                #   [stride_height, stride_width]
+                strides = [
+                    androidPramaterList[5].value[0],
+                    androidPramaterList[4].value[0]]
+                biasOp = androidInputList[2]
+
+        util.WriteConv2DWithAddOperationsLines(parametersV2List, padding,
+            strides, [1, 1], 1, 'nhwc', bRelu, biasOp, nnOutOp, js_fd)
 
         util.WriteLineToFile("    const model = await nn.createModel([{name: '%s', operand: %s}]);" % (nnOutOp, nnOutOp), js_fd)
 
@@ -602,7 +646,7 @@ def DumpJSTest(model, example, js_fd):
         util.WriteLineToFile("    const execution = await compilation.createExecution();", js_fd)
 
         # set input
-        for nnInOp in example.model.GetInputs():
+        for nnInOp in androidInputsList:
             util.WriteLineToFile("    execution.setInput('%s', new %s(%s));" % (nnInOp, util.TypedArrayTypeMapping[nnInOp.type.type].value, inputFeedDict[nnInOp]), js_fd)
 
         # set output
