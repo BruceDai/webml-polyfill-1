@@ -57,6 +57,8 @@ from test_generator import RelaxedModeConverter
 from test_generator import SmartOpen
 from test_generator import SymmPerChannelQuantParams
 
+import util
+
 def IndentedPrint(s, indent=2, *args, **kwargs):
     print('\n'.join([" " * indent + i for i in s.split('\n')]), *args, **kwargs)
 
@@ -141,16 +143,6 @@ namespace {spec_name} {{
         model_file=re.sub(pathRegex, "", tg.FileNames.modelFile),
         example_file=re.sub(pathRegex, "", tg.FileNames.exampleFile),
         spec_name=tg.FileNames.specName), file=test_fd)
-
-# For js
-def InitializeFilesForJS(js_fd):
-    fileHeader = "// Generated file (from: {spec_file}). Do not edit"
-    specFileBase = os.path.basename(tg.FileNames.specFile)
-    print(fileHeader.format(spec_file=specFileBase), file = js_fd)
-    print ("describe('CTS', function() {", file = js_fd)
-    print ("  const assert = chai.assert;", file = js_fd)
-    print ("  const nn = navigator.ml.getNeuralNetworkContext();", file = js_fd)
-# end
 
 # Dump is_ignored function for IgnoredOutput
 def DumpCtsIsIgnored(model, model_fd):
@@ -319,28 +311,16 @@ TEST_AVAILABLE_SINCE({version}, {test_name}, {namespace}::{create_model_name})\n
         log_file=tg.FileNames.logFile), file=test_fd)
 
 # For js
-def typeToArray(targetType):
-    if targetType in ["INT32", "TENSOR_INT32", "UINT32"]:
-        str_array = "Int32Array"
-    elif targetType in ["TENSOR_QUANT8_ASYMM"]:
-        str_array = "Uint8Array"
-    elif targetType in ["TENSOR_QUANT8_SYMM_PER_CHANNEL", "TENSOR_QUANT8_ASYMM_SIGNED"]:
-        str_array = "Int8Array"
-    else :
-        str_array = "Float32Array"
-    return str_array
-
-def DumpJSTest(model, example, js_fd):
+def CheckActions(model, example):
     assert model.compiled
     if model.dumped:
         return
-
     # check: types
     for t in model.GetTypes():
         if t.type not in Configuration.support_types and \
            t.type not in str(Configuration.support_types).lower():
-            print ("    skip not support types: %s (%s)" % (
-                   example.examplesName, t.type), file = sys.stderr)
+            util.WriteLineToFile("    skip not support types: %s (%s)" % (
+                   example.examplesName, t.type), sys.stderr)
             return
         else :
             # use "TENSOR_FLOAT32" to support "TENSOR_FLOAT16"
@@ -351,18 +331,6 @@ def DumpJSTest(model, example, js_fd):
             if t.type == "FLOAT16":
                 t.type = "FLOAT32"
 
-    '''
-    # select specifying type models
-    select_specifying_flag = False
-    if model.operations[0].optype in ["CONV_2D", "DEPTHWISE_CONV_2D"]:
-        if model.operands[0].type.type == "TENSOR_QUANT8_ASYMM_SIGNED" and \
-           model.operands[1].type.type == "TENSOR_QUANT8_SYMM_PER_CHANNEL":
-            select_specifying_flag = True
-
-    if not select_specifying_flag:
-        print ("    skip not select types: %s" % example.examplesName, file = sys.stderr)
-        return
-    '''
 
     # support layout: NHWC
     for p in example.model.GetParameters():
@@ -374,16 +342,16 @@ def DumpJSTest(model, example, js_fd):
                     if p in op.ins:
                         op.ins.remove(p)
             else :
-                print ("    skip not support layout: %s (%s)" % (
-                       example.examplesName, p.GetValueAsNumpy()), file = sys.stderr)
+                util.WriteLineToFile("    skip not support layout: %s (%s)" % (
+                       example.examplesName, p.GetValueAsNumpy()), sys.stderr)
                 return
 
     # check data type
     for operation in model.operations:
         if operation.optype not in Configuration.check_list.keys() and \
            operation.optype not in str(Configuration.check_list.keys()).lower():
-            print ("    skip not support operation code: %s (%s)" % (
-                   example.examplesName, operation.optype), file = sys.stderr)
+            util.WriteLineToFile("    skip not support operation code: %s (%s)" % (
+                   example.examplesName, operation.optype), sys.stderr)
             return
         else :
             for inputIndex in range(len(example.model.GetInputs())):
@@ -391,16 +359,16 @@ def DumpJSTest(model, example, js_fd):
                 c = Configuration.check_list[operation.optype]["inputs"]
                 if inputIndex in c:
                     if t.type not in c[inputIndex]["types"]:
-                        print ("    skip not support input(type): %s (%s)" % (
-                               example.examplesName, t.type), file = sys.stderr)
+                        util.WriteLineToFile("    skip not support input(type): %s (%s)" % (
+                               example.examplesName, t.type), sys.stderr)
                         return
                     if len(t.dimensions) not in c[inputIndex]["dimensions"]:
-                        print ("    skip not support input(dimension): %s (%s)" % (
-                               example.examplesName, t.dimensions), file = sys.stderr)
+                        util.WriteLineToFile("    skip not support input(dimension): %s (%s)" % (
+                               example.examplesName, t.dimensions), sys.stderr)
                         return
                 else :
-                    print ("    skip not support input: %s (%s)" % (
-                           example.examplesName, example.model.GetInputs()[inputIndex]), file = sys.stderr)
+                    util.WriteLineToFile("    skip not support input: %s (%s)" % (
+                           example.examplesName, example.model.GetInputs()[inputIndex]), sys.stderr)
                     return
 
             for parameterIndex in range(len(example.model.GetParameters())):
@@ -409,16 +377,16 @@ def DumpJSTest(model, example, js_fd):
                 pii = parameterIndex + len(example.model.GetInputs())
                 if pii in c:
                     if t.type not in c[pii]["types"]:
-                        print ("    skip not support parameter(type): %s (%s)" % (
-                               example.examplesName, t.type), file = sys.stderr)
+                        util.WriteLineToFile("    skip not support parameter(type): %s (%s)" % (
+                               example.examplesName, t.type), sys.stderr)
                         return
                     if len(t.dimensions) not in c[pii]["dimensions"]:
-                        print ("    skip not support parameter(dimension): %s (%s)" % (
-                               example.examplesName, t.dimensions), file = sys.stderr)
+                        util.WriteLineToFile("    skip not support parameter(dimension): %s (%s)" % (
+                               example.examplesName, t.dimensions), sys.stderr)
                         return
                 else :
-                    print ("    skip not support parameter: %s (%s)" % (
-                           example.examplesName, example.model.GetParameters()[parameterIndex]), file = sys.stderr)
+                    util.WriteLineToFile("    skip not support parameter: %s (%s)" % (
+                           example.examplesName, example.model.GetParameters()[parameterIndex]), sys.stderr)
                     return
 
             for outputIndex in range(len(example.model.GetOutputs())):
@@ -426,23 +394,23 @@ def DumpJSTest(model, example, js_fd):
                 c = Configuration.check_list[operation.optype]["outputs"]
                 if outputIndex in c:
                     if t.type not in c[outputIndex]["types"]:
-                        print ("    skip not support output(type): %s (%s)" % (
-                               example.examplesName, t.type), file = sys.stderr)
+                        util.WriteLineToFile("    skip not support output(type): %s (%s)" % (
+                               example.examplesName, t.type), sys.stderr)
                         return
                     if len(t.dimensions) not in c[outputIndex]["dimensions"]:
-                        print ("    skip not support output(dimension): %s (%s)" % (
-                               example.examplesName, t.dimensions), file = sys.stderr)
+                        util.WriteLineToFile("    skip not support output(dimension): %s (%s)" % (
+                               example.examplesName, t.dimensions), sys.stderr)
                         return
                 else :
-                    print ("    skip not support output: %s (%s)" % (
-                           example.examplesName, example.model.GetOutputs()[outputIndex]), file = sys.stderr)
+                    util.WriteLineToFile("    skip not support output: %s (%s)" % (
+                           example.examplesName, example.model.GetOutputs()[outputIndex]), sys.stderr)
                     return
 
     # check: input and output and values
     for inputFeedDict, outputFeedDict in example.feedDicts:
-        for inputOpName in example.model.GetInputs():
+        for nnInOp in example.model.GetInputs():
             # check input value is None
-            if len(inputFeedDict[inputOpName]) is 0:
+            if len(inputFeedDict[nnInOp]) is 0:
                 # For "TRANSPOSE": if perm is not given, it is set to (n-1...0)
                 if model.operations[0].optype == "TRANSPOSE":
                     perm_value = []
@@ -453,19 +421,19 @@ def DumpJSTest(model, example, js_fd):
                     model.operands[1].type.dimensions.clear()
                     model.operands[1].type.dimensions.append(len(model.operands[0].type.dimensions))
                     # set "perm" value
-                    inputFeedDict[inputOpName] = perm_value
+                    inputFeedDict[nnInOp] = perm_value
                 else :
-                    print ("    skip input value is None: %s (%s - %s)" % (
-                           example.examplesName, model.operations[0].optype, inputOpName), file = sys.stderr)
+                    util.WriteLineToFile("    skip input value is None: %s (%s - %s)" % (
+                           example.examplesName, model.operations[0].optype, nnInOp), sys.stderr)
                     return
 
     # check: compatible dimensions
     if model.operations[0].optype == "MUL" or model.operations[0].optype == "ADD":
         if model.operands[0].type != model.operands[1].type:
             if len(model.operands[0].type.dimensions) != 1 or len(model.operands[1].type.dimensions) != 1:
-                print ("    skip not support input(compatible dimensions): %s (%s - %s)" % (
+                util.WriteLineToFile("    skip not support input(compatible dimensions): %s (%s - %s)" % (
                        example.examplesName, model.operands[0].type.dimensions,
-                       model.operands[1].type.dimensions), file = sys.stderr)
+                       model.operands[1].type.dimensions), sys.stderr)
                 return
 
     # check: scale
@@ -473,157 +441,155 @@ def DumpJSTest(model, example, js_fd):
         if model.operands[0].type.type == "TENSOR_QUANT8_ASYMM":
             if example.model.GetOutputs()[0].type.scale <= (
                model.operands[0].type.scale * model.operands[1].type.scale):
-                print ("    skip not support output(scale): %s (%s <= (%s * %s))" % (
+                util.WriteLineToFile("    skip not support output(scale): %s (%s <= (%s * %s))" % (
                        example.examplesName, example.model.GetOutputs()[0].type.scale,
-                       model.operands[0].type.scale, model.operands[1].type.scale), file = sys.stderr)
+                       model.operands[0].type.scale, model.operands[1].type.scale), sys.stderr)
                 return
 
-    # set js test names
+def DumpJSTest(model, example, js_fd):
+    CheckActions(model, example)
+
+    androidNNOpInputList = example.model.GetInputs()
+    androidNNOpOutputList = example.model.GetOutputs()
+    androidNNOpParamList = example.model.GetParameters()
+
+    androidNNOpType = model.operations[0].optype
+    opInfoDict = util.OperationsInfoDict[androidNNOpType]
+    equalOpType = opInfoDict['equalOp'] # for Web NN API
+    bBiase = opInfoDict['paramList'].count('bias') != 0
+    bActivation = opInfoDict['paramList'].count('activation') != 0
+    reluType = None
+
+    if bActivation:
+        activationParam = androidNNOpParamList[-1]
+        if activationParam.value[0] == util.ReluType.RELU.value:
+            bActivation = True # add relu opertation to model graph
+            reluType = "relu"
+        # Current WebNN Specs don't yet include relu1, relu6 ops
+        # elif activationParam.value[0] == util.ReluType.RELU1.value:
+        #     bActivation = True # add relu1 opertation to model graph
+        #     reluType = "relu1"
+        # elif activationParam.value[0] == util.ReluType.RELU6.value:
+        #     bActivation = True # add relu6 opertation to model graph
+        #     reluType = "relu6"
+        else:
+            bActivation = False
+
+    # TODO
     Configuration.example_count += 1
 
-    test_name = ""
-    test_index = ""
-    args = "options"
-    per_channel_types = dict()
-    test_info = tg.FileNames.specName.capitalize().replace("_", " ")
-    test_name_array = test_info.split(" ")
+    testPurpose = ""
+    testIndex = ""
+    testPurposeArray = tg.FileNames.specName.split('_')
+    equalOp = util.OperationsInfoDict[androidNNOpType]['equalOp']
 
-    if test_name_array[-1].isdigit():
-        if test_name_array[-2] is not None and str(test_name_array[-2]) != "v1":
-            test_name = " ".join(test_name_array[:-1])
-            test_index = test_name_array[-1]
+    if testPurposeArray[-1].isdigit():
+        if testPurposeArray[-2] is not None and str(testPurposeArray[-2]) != 'v1':
+            testPurpose = '%s (%s)' % (equalOp, ' '.join(testPurposeArray[1:-1]))
+            testIndex = testPurposeArray[-1]
         else :
-            test_name = " ".join(test_name_array[:-1])
-            test_name = str(test_name) + "_" + test_name_array[-1]
+            testPurposeArray[-2] = '%s_%s' % (testPurposeArray[-2] ,testPurposeArray[-1])
+            testPurpose = '%s (%s)' % (equalOp, ' '.join(testPurposeArray[1:-1]))
     else:
-        test_name = test_info
+        if len(testPurposeArray) > 1:
+            testPurpose = '%s (%s)' % (equalOp, ' '.join(testPurposeArray[1:]))
+        else:
+            testPurpose = equalOp
 
-    print ("", file = js_fd)
+    util.WriteLineToFile("", js_fd)
+
+    if bBiase:
+        testPurpose = testPurpose + " + add"
+
+    if bActivation:
+        testPurpose = "%s + %s" % (testPurpose, reluType)
 
     for inputFeedDict, outputFeedDict in example.feedDicts:
         if Configuration.single_example_flag:
-            if test_index == "":
-                print ("  it('check result for %s example', async function() {" % test_name, file = js_fd)
+            if testIndex == "":
+                util.WriteLineToFile("  it('%s example', async function() {" % testPurpose, js_fd)
             else:
-                print ("  it('check result for %s example/%s', async function() {" % (
-                       test_name, test_index), file = js_fd)
+                util.WriteLineToFile("  it('%s example/%s', async function() {" % (
+                       testPurpose, testIndex), js_fd)
         else:
-            if test_index == "":
-                print ("  it('check result for %s example-%s', async function() {" % (
-                       test_name, Configuration.example_count), file = js_fd)
+            if testIndex == "":
+                util.WriteLineToFile("  it('%s example-%s', async function() {" % (
+                       testPurpose, Configuration.example_count), js_fd)
             else:
-                print ("  it('check result for %s example/%s-%s', async function() {" % (
-                       test_name, test_index, Configuration.example_count), file = js_fd)
+                util.WriteLineToFile("  it('%s example/%s-%s', async function() {" % (
+                       testPurpose, testIndex, Configuration.example_count), js_fd)
 
-        print ("    // For '%s' example: %s" % (test_name, example.examplesName), file = js_fd)
-        print ("    let model = await nn.createModel(%s);" % args, file = js_fd)
-        print ("    let operandIndex = 0;\n", file = js_fd)
 
-        # set input and output values
-        for inputOpName in example.model.GetInputs():
-            print ("    let %s_value = %s;" % (inputOpName, inputFeedDict[inputOpName]), file = js_fd)
-        for outputOpName in example.model.GetOutputs():
-            print ("    let %s_expect = %s;" % (outputOpName, outputFeedDict[outputOpName]), file = js_fd)
-        print ("", file = js_fd)
-
-        # set input and output types
-        for t in model.GetTypes():
-            if t.scale == 0.0 and t.zeroPoint == 0 and t.extraParams is None:
-                if t.type in ["FLOAT32", "INT32", "UINT32"]:
-                    typeDef = "    let %s = {type: nn.%s};" % (t, t.type)
-                else :
-                    typeDef = "    let %s = {type: nn.%s, dimensions: [%s]};\n    let %s_length = product(%s.dimensions);" % (
-                              t, t.type, t.GetDimensionsString()[1:-1], t, t)
+    insList = model.operations[0].ins
+    # remove dulicate item
+    # ["op1", "op2", "op3", "pad0", "pad0", "pad0", "pad0", "stride", "stride", "act"] -> ["op1", "op2", "op3", "pad0","stride", "act"]
+    actualIns = list(dict.fromkeys(insList))
+    for op in actualIns:
+        # 1. add oprand into model graph
+        # if op is model input, call nn.input to create oprand
+        # elif op is model constant, call nn.constant to create oprand
+        # else op just is paramter for opertation, define variable for nn.<operation> function
+        bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(op))
+        if op in androidNNOpInputList:
+            util.WriteLineToFile("    const %s = nn.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp)), js_fd)
+        else:
+            if op.type.type.startswith('TENSOR_'):
+                util.WriteLineToFile("    const %s = nn.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp), util.TypedArrayTypeMapping[op.type.type].value, util.reorderValues(op.value, op.type)), js_fd)
             else:
-                if t.extraParams is None or t.extraParams.hide:
-                    typeDef = "    let %s = {type: nn.%s, dimensions: [%s], scale: %s, zeroPoint: %d};\n    let %s_length = product(%s.dimensions);" % (
-                              t, t.type, t.GetDimensionsString()[1:-1], tg.PrettyPrintAsFloat(t.scale)[:-1], t.zeroPoint, t, t)
-                else:
-                    typeDef = "    let %s = {type: nn.%s, dimensions: [%s]};\n    let %s_length = product(%s.dimensions);" % (
-                              t, t.type, t.GetDimensionsString()[1:-1], t, t)
-                    per_channel_types[str(t)] = t.extraParams.GetJSConstructor()
-            print (typeDef, file = js_fd)
-        print ("", file = js_fd)
+                if insList.index(op) != len(insList) - 1:
+                    util.WriteLineToFile('    const %s = %s;' % (op, androidNNOpParamList[androidNNOpParamList.index(op)].value[0]), js_fd)
 
-        # set operands
-        for op in model.operands:
-            print ("    let %s = operandIndex++;" % op, file = js_fd)
-            print ("    model.addOperand(%s);" % op.type, file = js_fd)
 
-            if str(op.type) in per_channel_types.keys():
-                print ("    model.setOperandSymmPerChannelQuantParams(%s, %s);" % (
-                       op, per_channel_types[str(op.type)]), file = js_fd)
-        print ("", file = js_fd)
+    outputOp = androidNNOpOutputList[0]
 
-        # set other inputs value(support only one input)
-        if len(example.model.GetInputs()) > 1:
-            for inputIndex in range(len(example.model.GetInputs())):
-                if inputIndex is not 0:
-                    inputType = example.model.GetInputs()[inputIndex].type.type
-                    str_array = typeToArray(inputType)
-                    print ("    model.setOperandValue(%s, new %s(%s_value));" % (
-                           example.model.GetInputs()[inputIndex], str_array,
-                           example.model.GetInputs()[inputIndex]), file = js_fd)
-            print ("", file = js_fd)
+    # add opertation(s) into model graph
+    if androidNNOpType == 'ADD':
+        # nn.add doesn't fuse relu activation, only has two params
+        addParamList = [ins.name for ins in insList[:-1]]
+        if not bActivation:
+            util.WriteLineToFile("    const %s = nn.%s(%s);" % (outputOp, equalOp, ', '.join(addParamList)), js_fd)
+        else:
+            util.WriteLineToFile("    const intermediateOutput = nn.%s(%s);" % (equalOp, ', '.join(addParamList)), js_fd)
+            util.WriteLineToFile("    const %s = nn.%s(intermediateOutput);" % (outputOp, reluType), js_fd)
+    elif androidNNOpType == 'CONV_2D':
+        paddingParam = [str(insList[5]), str(insList[6]), str(insList[3]), str(insList[4])]
+        strideParam = [str(insList[8]), str(insList[7])]
+        conv2dParam = "%s, %s, [%s], [%s], [1, 1], 1, 'nhwc'" % (insList[0].name, insList[1].name, ', '.join(paddingParam), ', '.join(strideParam))
+        util.WriteLineToFile("    const intermediateOutput1 = nn.%s(%s);" % (equalOp, conv2dParam), js_fd)
+        biasOp = insList[2]
+        if not bActivation:
+            util.WriteLineToFile("    const %s = nn.add(intermediateOutput1, %s);" % (outputOp, biasOp), js_fd)
+        else:
+            util.WriteLineToFile("    const intermediateOutput2 = nn.add(intermediateOutput1, %s);" % biasOp, js_fd)
+            util.WriteLineToFile("    const %s = nn.%s(intermediateOutput2);" % (outputOp, reluType), js_fd)
 
-        # set parameter
-        for p in model.GetParameters():
-            parameterType = p.type.type
-            str_array = typeToArray(parameterType)
-            print ("    model.setOperandValue(%s, new %s([%s]));" % (
-                   p, str_array, GetJointStr(p.value)), file = js_fd)
+    util.WriteLineToFile("    const model = await nn.createModel([{name: '%s', operand: %s}]);" % (outputOp, outputOp), js_fd)
 
-        # set operations
-        for op in model.operations:
-            print ("    model.addOperation(nn.%s, [%s], [%s]);" % (
-                   op.optype, tg.GetJointStr(op.ins), tg.GetJointStr(op.outs)), file = js_fd)
-        print ("", file = js_fd)
+    # compiling model
+    util.WriteLineToFile("    const compilation = await model.createCompilation();", js_fd)
 
-        # identify inputs and outputs
-        print ("    model.identifyInputsAndOutputs([%s], [%s]);" % (
-               example.model.GetInputs()[0], tg.GetJointStr(example.model.GetOutputs())), file = js_fd)
-        print ("    await model.finish();", file = js_fd)
-        print ("", file = js_fd)
+    # executing model
+    util.WriteLineToFile("    const execution = await compilation.createExecution();", js_fd)
 
-        # compiling model
-        print ("    let compilation = await model.createCompilation();", file = js_fd)
-        print ("    compilation.setPreference(getPreferenceCode(%s.prefer));" % args, file = js_fd)
-        print ("    await compilation.finish();", file = js_fd)
-        print ("", file = js_fd)
+    # set input
+    for nnInOp in androidNNOpInputList:
+        values = inputFeedDict[nnInOp]
+        bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(nnInOp))
+        if bFilterOp:
+            values = util.reorderValues(values, nnInOp.type)
+        util.WriteLineToFile("    execution.setInput('%s', new %s(%s));" % (nnInOp, util.TypedArrayTypeMapping[nnInOp.type.type].value, values), js_fd)
 
-        # executing model
-        print ("    let execution = await compilation.createExecution();", file = js_fd)
-        print ("", file = js_fd)
+    # set output
+    util.WriteLineToFile("    const expected = %s;" % outputFeedDict[outputOp], js_fd)
+    util.WriteLineToFile("    const outputBuffer = new %s(expected.length);" % util.TypedArrayTypeMapping[outputOp.type.type].value, js_fd)
+    util.WriteLineToFile("    execution.setOutput('%s', outputBuffer);" % outputOp, js_fd)
 
-        # set input and output
-        inputType = example.model.GetInputs()[0].type.type
-        str_array = typeToArray(inputType)
-        print ("    let %s_input = new %s(%s_value);" % (
-               example.model.GetInputs()[0], str_array, example.model.GetInputs()[0]), file = js_fd)
-        print ("    execution.setInput(0, %s_input);" % example.model.GetInputs()[0], file = js_fd)
+    util.WriteLineToFile("    await execution.startCompute();", js_fd)
 
-        for outputIndex in range(len(example.model.GetOutputs())):
-            outputType = example.model.GetOutputs()[outputIndex].type.type
-            str_array = typeToArray(outputType)
-            print ("    let %s_output = new %s(%s_length);" % (
-                   example.model.GetOutputs()[outputIndex], str_array,
-                   example.model.GetOutputs()[outputIndex].type), file = js_fd)
-            print ("    execution.setOutput(%s, %s_output);" % (
-                   outputIndex, example.model.GetOutputs()[outputIndex]), file = js_fd)
-        print ("", file = js_fd)
-        print ("    await execution.startCompute();", file = js_fd)
-        print ("", file = js_fd)
+    # assert output
+    util.WriteLineToFile("    checkOutput(outputBuffer, expected);", js_fd)
 
-        # assert output
-        for output in example.model.GetOutputs():
-            print ("    for (let i = 0; i < %s_length; ++i) {" % output.type, file = js_fd)
-            if output.type.type in ["TENSOR_QUANT8_ASYMM", "TENSOR_QUANT8_ASYMM_SIGNED", "TENSOR_QUANT8_SYMM_PER_CHANNEL", "INT32"]:
-                print ("      assert.isTrue(almostEqualCTSQuant8(%s_output[i], %s_expect[i]));" % (output, output), file = js_fd)
-            else:
-                print ("      assert.isTrue(almostEqualCTS(%s_output[i], %s_expect[i]));" % (output, output), file = js_fd)
-            print ("    }", file = js_fd)
-
-        print ("  });", file = js_fd)
+    util.WriteLineToFile("  });", js_fd)
 
     model.dumped = True
 # end
@@ -661,7 +627,7 @@ if __name__ == '__main__':
                  SmartOpen(tg.FileNames.exampleFile) as example_fd, \
                  SmartOpen(tg.FileNames.testFile) as test_fd, \
                  SmartOpen(tg.FileNames.jsFile) as js_fd:
-                InitializeFilesForJS(js_fd)
+                util.WriteMochaTestCaseHeads(js_fd)
                 Example.DumpAllExamples(
                     DumpModel=DumpCtsModel, model_fd=model_fd,
                     DumpExample=DumpCtsExample, example_fd=example_fd,
