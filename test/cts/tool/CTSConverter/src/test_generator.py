@@ -1005,7 +1005,7 @@ class Example:
             '''
 
             # For js: remove DynamicOutputShapeConverter
-            print ("    skip not support variations: DynamicOutputShape", file=sys.stderr)
+            # print ("    skip not support variations: DynamicOutputShape", file=sys.stderr)
             self.variations = [[DefaultVariation()]]
             # end
         else:
