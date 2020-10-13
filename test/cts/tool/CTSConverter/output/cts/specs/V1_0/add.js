@@ -3,10 +3,12 @@ describe('CTS-v2', function() {
   const assert = chai.assert;
   const nn = navigator.ml.getNeuralNetworkContext('v2');
 
-  it('add example', async function() {
+  it('add + relu example', async function() {
     const op1 = nn.input('op1', {type: 'tensor-float32', dimensions: [2]});
     const op2 = nn.input('op2', {type: 'tensor-float32', dimensions: [2]});
-    const op3 = nn.add(op1, op2);
+    const act = 1;
+    const intermediateOutput = nn.add(op1, op2);
+    const op3 = nn.relu(intermediateOutput);
     const model = await nn.createModel([{name: 'op3', operand: op3}]);
     const compilation = await model.createCompilation();
     const execution = await compilation.createExecution();

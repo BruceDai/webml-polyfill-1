@@ -19,7 +19,7 @@ i1 = Input("op1", "TENSOR_FLOAT32", "{1, 1, 1, 3}")
 f1 = Parameter("op2", "TENSOR_FLOAT32", "{3, 1, 1, 3}", [1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0])
 b1 = Parameter("op3", "TENSOR_FLOAT32", "{3}", [0., 0., 0.])
 pad0 = Int32Scalar("pad0", 0)
-act = Int32Scalar("act", 0)
+act = Int32Scalar("act", 1)
 stride = Int32Scalar("stride", 1)
 # output dimension:
 #     (i1.height - f1.height + 1) x (i1.width - f1.width + 1)
