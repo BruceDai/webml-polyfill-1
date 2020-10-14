@@ -16,11 +16,11 @@ class OperandTypeMapping(NoValue):
     UINT32 = 'uint32'
     FLOAT16 = 'float16'
     FLOAT32 = 'float32'
-    TENSOR_INT32 = 'tensor-int32'
-    TENSOR_FLOAT16 = 'tensor-float16'
-    TENSOR_FLOAT32 = 'tensor-float32'
-    TENSOR_OEM_BYTE = 'tensor-quant8-asymm'
-    TENSOR_QUANT8_ASYMM = 'tensor-quant8-asymm'
+    TENSOR_INT32 = 'int32'
+    TENSOR_FLOAT16 = 'float16'
+    TENSOR_FLOAT32 = 'float32'
+    TENSOR_OEM_BYTE = 'uint8'
+    TENSOR_QUANT8_ASYMM = 'uint8'
 
 
 OperationsInfoDict = {
@@ -54,6 +54,7 @@ class TypedArrayTypeMapping(NoValue):
 
 
 def WriteLineToFile(content, fileName):
+    # print(content)
     print(content, file = fileName)
 
 
@@ -61,10 +62,10 @@ def WriteMochaTestCaseHeads(fileName):
     comment = "// Converted test case (from: {spec_file}). Do not edit"
     specFileBase = os.path.basename(tg.FileNames.specFile)
     WriteLineToFile(comment.format(spec_file = specFileBase), fileName)
-    WriteLineToFile("describe('CTS-v2', function() {", fileName)
-    WriteLineToFile("  const assert = chai.assert;", fileName)
-    WriteLineToFile("  const nn = navigator.ml.getNeuralNetworkContext('v2');",
+    WriteLineToFile("describe('CTS', function() {", fileName)
+    WriteLineToFile("  const nn = navigator.ml.getNeuralNetworkContext();",
                     fileName)
+    WriteLineToFile("  const builder = nn.createModelBuilder();", fileName)
 
 
 def CheckFilterOp(androidNNOpType, index):
@@ -82,7 +83,7 @@ def ConvertDimensions(dimensions, layout = 'nhwc'):
 
     return dimensions
 
-
+# TODO Need update for coming scalar tensor define
 def GetOperandDesc(t, filter = False, layout = 'nhwc'):
     dimensions = t.GetDimensionsString()[1:-1].split(',')
     dimensions = [d.strip() for d in dimensions]
@@ -100,6 +101,7 @@ def GetOperandDesc(t, filter = False, layout = 'nhwc'):
                 ', '.join(dimensions))
     else:
         if t.extraParams is None or t.extraParams.hide:
+            # TODO handle scalar tensor
             return "{type: '%s', dimensions: [%s], scale: %s, zeroPoint: %d}" \
              % (OperandTypeMapping[t.type].value,
                 ', '.join(dimensions),

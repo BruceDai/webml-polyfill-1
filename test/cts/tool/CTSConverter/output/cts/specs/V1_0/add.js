@@ -1,23 +1,17 @@
 // Converted test case (from: add.mod.py). Do not edit
-describe('CTS-v2', function() {
-  const assert = chai.assert;
-  const nn = navigator.ml.getNeuralNetworkContext('v2');
+describe('CTS', function() {
+  const nn = navigator.ml.getNeuralNetworkContext();
+  const builder = nn.createModelBuilder();
 
-  it('add + relu example', async function() {
-    const op1 = nn.input('op1', {type: 'tensor-float32', dimensions: [2]});
-    const op2 = nn.input('op2', {type: 'tensor-float32', dimensions: [2]});
-    const act = 1;
-    const intermediateOutput = nn.add(op1, op2);
-    const op3 = nn.relu(intermediateOutput);
-    const model = await nn.createModel([{name: 'op3', operand: op3}]);
-    const compilation = await model.createCompilation();
-    const execution = await compilation.createExecution();
-    execution.setInput('op1', new Float32Array([1.0, 2.0]));
-    execution.setInput('op2', new Float32Array([3.0, 4.0]));
-    const expected = [4.0, 6.0];
-    const outputBuffer = new Float32Array(expected.length);
-    execution.setOutput('op3', outputBuffer);
-    await execution.startCompute();
-    checkOutput(outputBuffer, expected);
+  it('add example', async function() {
+    const op1 = builder.input('op1', {type: 'float32', dimensions: [2]});
+    const op2 = builder.input('op2', {type: 'float32', dimensions: [2]});
+    const op3 = builder.add(op1, op2);
+    const model = await builder.createModel({'op3', op3});
+    const compilation = await model.compile({powerPreference: 'low-power'});
+    const op1Buffer = new Float32Array([1.0, 2.0]);
+    const op2Buffer = new Float32Array([3.0, 4.0]);
+    let outputs = await compilation.compute({'op1': {buffer: op1Buffer}, 'op2': {buffer: op2Buffer}});
+    checkOutput(outputs.op3.buffer, expected);
   });
 });

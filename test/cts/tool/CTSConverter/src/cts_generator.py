@@ -458,11 +458,20 @@ def DumpJSTest(model, example, js_fd):
     equalOpType = opInfoDict['equalOp'] # for Web NN API
     bBiase = opInfoDict['paramList'].count('bias') != 0
     bActivation = opInfoDict['paramList'].count('activation') != 0
+    reluType = None
 
     if bActivation:
         activationParam = androidNNOpParamList[-1]
         if activationParam.value[0] == util.ReluType.RELU.value:
             bActivation = True # add relu opertation to model graph
+            reluType = "relu"
+        # Current WebNN Specs don't yet include relu1, relu6 ops
+        # elif activationParam.value[0] == util.ReluType.RELU1.value:
+        #     bActivation = True # add relu1 opertation to model graph
+        #     reluType = "relu1"
+        # elif activationParam.value[0] == util.ReluType.RELU6.value:
+        #     bActivation = True # add relu6 opertation to model graph
+        #     reluType = "relu6"
         else:
             bActivation = False
 
@@ -492,8 +501,9 @@ def DumpJSTest(model, example, js_fd):
     if bBiase:
         testPurpose = testPurpose + " + add"
 
+
     if bActivation:
-         testPurpose = testPurpose + " + relu"
+        testPurpose = "%s + %s" % (testPurpose, reluType)
 
     for inputFeedDict, outputFeedDict in example.feedDicts:
         if Configuration.single_example_flag:
@@ -522,15 +532,12 @@ def DumpJSTest(model, example, js_fd):
         # else op just is paramter for opertation, define variable for nn.<operation> function
         bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(op))
         if op in androidNNOpInputList:
-            util.WriteLineToFile("    const %s = nn.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp)), js_fd)
+            util.WriteLineToFile("    const %s = builder.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp)), js_fd)
         else:
             if op.type.type.startswith('TENSOR_'):
-                util.WriteLineToFile("    const %s = nn.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp), util.TypedArrayTypeMapping[op.type.type].value, util.reorderValues(op.value, op.type)), js_fd)
+                util.WriteLineToFile("    const %s = builder.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp), util.TypedArrayTypeMapping[op.type.type].value, util.reorderValues(op.value, op.type)), js_fd)
             else:
-                if insList.index(op) == len(insList) - 1:
-                    if bActivation:
-                        util.WriteLineToFile('    const %s = %s;' % (op, androidNNOpParamList[androidNNOpParamList.index(op)].value[0]), js_fd)
-                else:
+                if insList.index(op) != len(insList) - 1:
                     util.WriteLineToFile('    const %s = %s;' % (op, androidNNOpParamList[androidNNOpParamList.index(op)].value[0]), js_fd)
 
 
@@ -541,10 +548,10 @@ def DumpJSTest(model, example, js_fd):
         # nn.add doesn't fuse relu activation, only has two params
         addParamList = [ins.name for ins in insList[:-1]]
         if not bActivation:
-            util.WriteLineToFile("    const %s = nn.%s(%s);" % (outputOp, equalOp, ', '.join(addParamList)), js_fd)
+            util.WriteLineToFile("    const %s = builder.%s(%s);" % (outputOp, equalOp, ', '.join(addParamList)), js_fd)
         else:
-            util.WriteLineToFile("    const intermediateOutput = nn.%s(%s);" % (equalOp, ', '.join(addParamList)), js_fd)
-            util.WriteLineToFile("    const %s = nn.relu(intermediateOutput);" % outputOp, js_fd)
+            util.WriteLineToFile("    const intermediateOutput = builder.%s(%s);" % (equalOp, ', '.join(addParamList)), js_fd)
+            util.WriteLineToFile("    const %s = builder.%s(intermediateOutput);" % (outputOp, reluType), js_fd)
     elif androidNNOpType == 'CONV_2D':
         paddingParam = [str(insList[5]), str(insList[6]), str(insList[3]), str(insList[4])]
         strideParam = [str(insList[8]), str(insList[7])]
@@ -552,36 +559,28 @@ def DumpJSTest(model, example, js_fd):
         util.WriteLineToFile("    const intermediateOutput1 = nn.%s(%s);" % (equalOp, conv2dParam), js_fd)
         biasOp = insList[2]
         if not bActivation:
-            util.WriteLineToFile("    const %s = nn.add(intermediateOutput1, %s);" % (outputOp, biasOp), js_fd)
+            util.WriteLineToFile("    const %s = builder.add(intermediateOutput1, %s);" % (outputOp, biasOp), js_fd)
         else:
-            util.WriteLineToFile("    const intermediateOutput2 = nn.add(intermediateOutput1, %s);" % biasOp, js_fd)
-            util.WriteLineToFile("    const %s = nn.relu(intermediateOutput2);" % outputOp, js_fd)
+            util.WriteLineToFile("    const intermediateOutput2 = builder.add(intermediateOutput1, %s);" % biasOp, js_fd)
+            util.WriteLineToFile("    const %s = builder.%s(intermediateOutput2);" % (outputOp, reluType), js_fd)
 
-    util.WriteLineToFile("    const model = await nn.createModel([{name: '%s', operand: %s}]);" % (outputOp, outputOp), js_fd)
+    util.WriteLineToFile("    const model = await builder.createModel({'%s', %s});" % (outputOp, outputOp), js_fd)
+    util.WriteLineToFile("    const compilation = await model.compile({powerPreference: 'low-power'});", js_fd)
 
-    # compiling model
-    util.WriteLineToFile("    const compilation = await model.createCompilation();", js_fd)
-
-    # executing model
-    util.WriteLineToFile("    const execution = await compilation.createExecution();", js_fd)
-
-    # set input
+    computeParmList = []
+    # setup the input buffers
     for nnInOp in androidNNOpInputList:
         values = inputFeedDict[nnInOp]
         bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(nnInOp))
         if bFilterOp:
             values = util.reorderValues(values, nnInOp.type)
-        util.WriteLineToFile("    execution.setInput('%s', new %s(%s));" % (nnInOp, util.TypedArrayTypeMapping[nnInOp.type.type].value, values), js_fd)
+        util.WriteLineToFile("    const %sBuffer = new %s(%s);" % (nnInOp, util.TypedArrayTypeMapping[nnInOp.type.type].value, values), js_fd)
+        computeParmList.append("'%s': {buffer: %sBuffer}" % (nnInOp, nnInOp))
 
-    # set output
-    util.WriteLineToFile("    const expected = %s;" % outputFeedDict[outputOp], js_fd)
-    util.WriteLineToFile("    const outputBuffer = new %s(expected.length);" % util.TypedArrayTypeMapping[outputOp.type.type].value, js_fd)
-    util.WriteLineToFile("    execution.setOutput('%s', outputBuffer);" % outputOp, js_fd)
-
-    util.WriteLineToFile("    await execution.startCompute();", js_fd)
+    util.WriteLineToFile("    let outputs = await compilation.compute({%s});" % ', '.join(computeParmList), js_fd)
 
     # assert output
-    util.WriteLineToFile("    checkOutput(outputBuffer, expected);", js_fd)
+    util.WriteLineToFile("    checkOutput(outputs.%s.buffer, expected);" % outputOp, js_fd)
 
     util.WriteLineToFile("  });", js_fd)
 
