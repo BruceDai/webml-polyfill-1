@@ -1,5 +1,4 @@
-// Converted test case (from: add.mod.py). Do not edit
-describe('CTS-v2', function() {
+describe('converted CTS', function() {
   const nn = navigator.ml.getNeuralNetworkContext('v2');
 
   it('add test converted from Android NNAPI CTS-ADD test', async function() {
