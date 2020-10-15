@@ -32,6 +32,11 @@ OperationsInfoDict = {
         'equalOp': 'conv2d',
         # ['input', 'filter', 'bias', 'padding left', 'padding right', 'padding top', 'padding bottom', 'stride width', 'stride height', 'activation']
         'paramList': ['input', 'filter', 'bias', 'padding', 'padding', 'padding', 'padding', 'stride', 'stride', 'activation'] # current only for explicit paddings
+    },
+    'DEPTHWISE_CONV_2D': {
+        'equalOp': 'conv2d',
+        # ['input', 'filter', 'bias', 'padding left', 'padding right', 'padding top', 'padding bottom', 'stride width', 'stride height', 'multiplier', 'activation']
+        'paramList': ['input', 'filter', 'bias', 'padding', 'padding', 'padding', 'padding', 'stride', 'stride', 'multiplier', 'activation'] # current only for explicit paddings
     }
 }
 
@@ -72,13 +77,15 @@ def CheckFilterOp(androidNNOpType, index):
     return OperationsInfoDict[androidNNOpType]['paramList'][index] == 'filter'
 
 
-def ConvertDimensions(dimensions, layout = 'nhwc'):
+def ConvertDimensions(dimensions, groups = 1, layout = 'nhwc'):
     if layout == 'nhwc':
         # Convert dimensions of "nhwc" [depth_out, filter_height, filter_width, depth_in]
         # to required:
         # [height, width, input_channels/groups, output_channels]
         depthOut = dimensions[0]
-        dimensions = dimensions[1:4]
+        depthIn = dimensions[-1]
+        dimensions = dimensions[1:3]
+        dimensions.append(str(int(int(depthIn) / groups)))
         dimensions.append(depthOut)
 
     return dimensions

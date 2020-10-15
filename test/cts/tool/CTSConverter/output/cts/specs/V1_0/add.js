@@ -3,7 +3,7 @@ describe('CTS', function() {
   const nn = navigator.ml.getNeuralNetworkContext();
   const builder = nn.createModelBuilder();
 
-  it('add example', async function() {
+  it('add test converted from Android NNAPI CTS-ADD test', async function() {
     const op1 = builder.input('op1', {type: 'float32', dimensions: [2]});
     const op2 = builder.input('op2', {type: 'float32', dimensions: [2]});
     const op3 = builder.add(op1, op2);

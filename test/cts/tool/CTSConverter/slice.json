@@ -6,6 +6,9 @@
         "conv_float_large.mod.py",
         "conv_float_large_weights_as_inputs.mod.py",
         "conv_float.mod.py",
-        "conv_float_weights_as_inputs.mod.py"
+        "conv_float_weights_as_inputs.mod.py",
+        "depthwise_conv2d_float_large.mod.py",
+        "depthwise_conv2d_float_large_2.mod.py",
+        "depthwise_conv2d_float_large_2_weights_as_inputs.mod.py"
     ]
 }

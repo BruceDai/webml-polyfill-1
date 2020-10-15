@@ -3,7 +3,7 @@ describe('CTS', function() {
   const nn = navigator.ml.getNeuralNetworkContext();
   const builder = nn.createModelBuilder();
 
-  it('conv2d (float weights as inputs) + add example', async function() {
+  it('conv2d + add test converted from Android NNAPI CTS-CONV_2D (float weights as inputs) test', async function() {
     const op1 = builder.input('op1', {type: 'float32', dimensions: [1, 3, 3, 1]});
     const op2 = builder.input('op2', {type: 'float32', dimensions: [2, 2, 1, 1]});
     const op3 = builder.input('op3', {type: 'float32', dimensions: [1]});

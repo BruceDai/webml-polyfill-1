@@ -478,46 +478,52 @@ def DumpJSTest(model, example, js_fd):
     # TODO
     Configuration.example_count += 1
 
-    testPurpose = ""
-    testIndex = ""
-    testPurposeArray = tg.FileNames.specName.split('_')
-    equalOp = util.OperationsInfoDict[androidNNOpType]['equalOp']
 
-    if testPurposeArray[-1].isdigit():
-        if testPurposeArray[-2] is not None and str(testPurposeArray[-2]) != 'v1':
-            testPurpose = '%s (%s)' % (equalOp, ' '.join(testPurposeArray[1:-1]))
-            testIndex = testPurposeArray[-1]
+    convertedInfo = "converted from Android NNAPI CTS-"
+    testIndex = ""
+    convertedInfoArray = tg.FileNames.specName.split('_')
+    equalOp = util.OperationsInfoDict[androidNNOpType]['equalOp']
+    testPurpose = equalOp
+    start = 1
+    if tg.FileNames.specName.startswith('depthwise_conv2d'):
+        start = 2
+
+    if convertedInfoArray[-1].isdigit():
+        if convertedInfoArray[-2] is not None and str(convertedInfoArray[-2]) != 'v1':
+            convertedInfo += '%s (%s)' % (androidNNOpType, ' '.join(convertedInfoArray[start:-1]))
+            testIndex = convertedInfoArray[-1]
         else :
-            testPurposeArray[-2] = '%s_%s' % (testPurposeArray[-2] ,testPurposeArray[-1])
-            testPurpose = '%s (%s)' % (equalOp, ' '.join(testPurposeArray[1:-1]))
+            convertedInfoArray[-2] = '%s_%s' % (convertedInfoArray[-2] ,convertedInfoArray[-1])
+            convertedInfo += '%s (%s)' % (androidNNOpType, ' '.join(convertedInfoArray[start:-1]))
     else:
-        if len(testPurposeArray) > 1:
-            testPurpose = '%s (%s)' % (equalOp, ' '.join(testPurposeArray[1:]))
+        if len(convertedInfoArray) > start:
+            convertedInfo += '%s (%s)' % (androidNNOpType, ' '.join(convertedInfoArray[start:]))
         else:
-            testPurpose = equalOp
+            convertedInfo += androidNNOpType
 
     util.WriteLineToFile("", js_fd)
 
     if bBiase:
-        testPurpose = testPurpose + " + add"
-
+        testPurpose += " + add"
 
     if bActivation:
-        testPurpose = "%s + %s" % (testPurpose, reluType)
+        testPurpose += ' + ' + reluType
+
+    testPurpose = "%s test %s" % (testPurpose, convertedInfo)
 
     for inputFeedDict, outputFeedDict in example.feedDicts:
         if Configuration.single_example_flag:
             if testIndex == "":
-                util.WriteLineToFile("  it('%s example', async function() {" % testPurpose, js_fd)
+                util.WriteLineToFile("  it('%s test', async function() {" % testPurpose, js_fd)
             else:
-                util.WriteLineToFile("  it('%s example/%s', async function() {" % (
+                util.WriteLineToFile("  it('%s test/%s', async function() {" % (
                        testPurpose, testIndex), js_fd)
         else:
             if testIndex == "":
-                util.WriteLineToFile("  it('%s example-%s', async function() {" % (
+                util.WriteLineToFile("  it('%s test-%s', async function() {" % (
                        testPurpose, Configuration.example_count), js_fd)
             else:
-                util.WriteLineToFile("  it('%s example/%s-%s', async function() {" % (
+                util.WriteLineToFile("  it('%s test/%s-%s', async function() {" % (
                        testPurpose, testIndex, Configuration.example_count), js_fd)
 
 
@@ -535,7 +541,10 @@ def DumpJSTest(model, example, js_fd):
             util.WriteLineToFile("    const %s = builder.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp)), js_fd)
         else:
             if op.type.type.startswith('TENSOR_'):
-                util.WriteLineToFile("    const %s = builder.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp), util.TypedArrayTypeMapping[op.type.type].value, util.reorderValues(op.value, op.type)), js_fd)
+                tensorValues = op.value
+                if bFilterOp:
+                    tensorValues = util.reorderValues(op.value, op.type)
+                util.WriteLineToFile("    const %s = builder.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp), util.TypedArrayTypeMapping[op.type.type].value, tensorValues), js_fd)
             else:
                 if insList.index(op) != len(insList) - 1:
                     util.WriteLineToFile('    const %s = %s;' % (op, androidNNOpParamList[androidNNOpParamList.index(op)].value[0]), js_fd)
@@ -552,10 +561,13 @@ def DumpJSTest(model, example, js_fd):
         else:
             util.WriteLineToFile("    const intermediateOutput = builder.%s(%s);" % (equalOp, ', '.join(addParamList)), js_fd)
             util.WriteLineToFile("    const %s = builder.%s(intermediateOutput);" % (outputOp, reluType), js_fd)
-    elif androidNNOpType == 'CONV_2D':
+    elif androidNNOpType in ['CONV_2D', 'DEPTHWISE_CONV_2D']:
         paddingParam = [str(insList[5]), str(insList[6]), str(insList[3]), str(insList[4])]
         strideParam = [str(insList[8]), str(insList[7])]
-        conv2dParam = "%s, %s, [%s], [%s], [1, 1], 1, 'nhwc'" % (insList[0].name, insList[1].name, ', '.join(paddingParam), ', '.join(strideParam))
+        group = '1'
+        if androidNNOpType == 'DEPTHWISE_CONV_2D':
+            group = insList[9].name
+        conv2dParam = "%s, %s, [%s], [%s], [1, 1], %s, 'nhwc'" % (insList[0].name, insList[1].name, ', '.join(paddingParam), ', '.join(strideParam), group)
         util.WriteLineToFile("    const intermediateOutput1 = nn.%s(%s);" % (equalOp, conv2dParam), js_fd)
         biasOp = insList[2]
         if not bActivation:
