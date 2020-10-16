@@ -1,11 +1,15 @@
-// Converted test case (from: add.mod.py). Do not edit
+'use strict';
+import * as utils from '../utils.js';
+
 describe('CTS', function() {
   const nn = navigator.ml.getNeuralNetworkContext();
   const builder = nn.createModelBuilder();
 
   it('add + relu test converted from Android NNAPI CTS-ADD test', async function() {
+    // Converted test case (from: add.mod.py). Do not edit
     const op1 = builder.input('op1', {type: 'float32', dimensions: [2]});
     const op2 = builder.input('op2', {type: 'float32', dimensions: [2]});
+    const expected = [4.0, 6.0];
     const intermediateOutput = builder.add(op1, op2);
     const op3 = builder.relu(intermediateOutput);
     const model = await builder.createModel({op3});
@@ -13,6 +17,6 @@ describe('CTS', function() {
     const op1Buffer = new Float32Array([1.0, 2.0]);
     const op2Buffer = new Float32Array([3.0, 4.0]);
     let outputs = await compilation.compute({'op1': {buffer: op1Buffer}, 'op2': {buffer: op2Buffer}});
-    checkOutput(outputs.op3.buffer, expected);
+    utils.checkValue(outputs.op3.buffer, expected);
   });
 });

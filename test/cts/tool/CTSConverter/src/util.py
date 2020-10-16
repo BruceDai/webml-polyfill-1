@@ -5,7 +5,7 @@ from enum import IntEnum
 import os
 import numpy as np
 
-import test_generator as tg
+# import test_generator as tg
 
 class NoValue(Enum):
     def __repr__(self):
@@ -64,9 +64,8 @@ def WriteLineToFile(content, fileName):
 
 
 def WriteMochaTestCaseHeads(fileName):
-    comment = "// Converted test case (from: {spec_file}). Do not edit"
-    specFileBase = os.path.basename(tg.FileNames.specFile)
-    WriteLineToFile(comment.format(spec_file = specFileBase), fileName)
+    WriteLineToFile("'use strict';", fileName)
+    WriteLineToFile("import * as utils from '../utils.js';\n", fileName)
     WriteLineToFile("describe('CTS', function() {", fileName)
     WriteLineToFile("  const nn = navigator.ml.getNeuralNetworkContext();",
                     fileName)

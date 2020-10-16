@@ -526,6 +526,9 @@ def DumpJSTest(model, example, js_fd):
                 util.WriteLineToFile("  it('%s test/%s-%s', async function() {" % (
                        testPurpose, testIndex, Configuration.example_count), js_fd)
 
+        comment = "    // Converted test case (from: {spec_file}). Do not edit"
+        specFileBase = os.path.basename(tg.FileNames.specFile)
+        util.WriteLineToFile(comment.format(spec_file = specFileBase), js_fd)
 
     insList = model.operations[0].ins
     # remove dulicate item
@@ -533,9 +536,9 @@ def DumpJSTest(model, example, js_fd):
     actualIns = list(dict.fromkeys(insList))
     for op in actualIns:
         # 1. add oprand into model graph
-        # if op is model input, call nn.input to create oprand
-        # elif op is model constant, call nn.constant to create oprand
-        # else op just is paramter for opertation, define variable for nn.<operation> function
+        # if op is model input, call builder.input to create oprand
+        # elif op is model constant, call builder.constant to create oprand
+        # else op just is paramter for opertation, define variable for builder.<operation> function
         bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(op))
         if op in androidNNOpInputList:
             util.WriteLineToFile("    const %s = builder.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp)), js_fd)
@@ -551,10 +554,11 @@ def DumpJSTest(model, example, js_fd):
 
 
     outputOp = androidNNOpOutputList[0]
+    util.WriteLineToFile("    const expected = %s;" % outputFeedDict[outputOp], js_fd)
 
     # add opertation(s) into model graph
     if androidNNOpType == 'ADD':
-        # nn.add doesn't fuse relu activation, only has two params
+        # builder.add doesn't fuse relu activation, only has two params
         addParamList = [ins.name for ins in insList[:-1]]
         if not bActivation:
             util.WriteLineToFile("    const %s = builder.%s(%s);" % (outputOp, equalOp, ', '.join(addParamList)), js_fd)
@@ -568,7 +572,7 @@ def DumpJSTest(model, example, js_fd):
         if androidNNOpType == 'DEPTHWISE_CONV_2D':
             group = insList[9].name
         conv2dParam = "%s, %s, [%s], [%s], [1, 1], %s, 'nhwc'" % (insList[0].name, insList[1].name, ', '.join(paddingParam), ', '.join(strideParam), group)
-        util.WriteLineToFile("    const intermediateOutput1 = nn.%s(%s);" % (equalOp, conv2dParam), js_fd)
+        util.WriteLineToFile("    const intermediateOutput1 = builder.%s(%s);" % (equalOp, conv2dParam), js_fd)
         biasOp = insList[2]
         if not bActivation:
             util.WriteLineToFile("    const %s = builder.add(intermediateOutput1, %s);" % (outputOp, biasOp), js_fd)
@@ -592,7 +596,7 @@ def DumpJSTest(model, example, js_fd):
     util.WriteLineToFile("    let outputs = await compilation.compute({%s});" % ', '.join(computeParmList), js_fd)
 
     # assert output
-    util.WriteLineToFile("    checkOutput(outputs.%s.buffer, expected);" % outputOp, js_fd)
+    util.WriteLineToFile("    utils.checkValue(outputs.%s.buffer, expected);" % outputOp, js_fd)
 
     util.WriteLineToFile("  });", js_fd)
 
