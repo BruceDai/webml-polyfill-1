@@ -576,7 +576,7 @@ def DumpJSTest(model, example, js_fd):
             util.WriteLineToFile("    const intermediateOutput2 = builder.add(intermediateOutput1, %s);" % biasOp, js_fd)
             util.WriteLineToFile("    const %s = builder.%s(intermediateOutput2);" % (outputOp, reluType), js_fd)
 
-    util.WriteLineToFile("    const model = await builder.createModel({'%s', %s});" % (outputOp, outputOp), js_fd)
+    util.WriteLineToFile("    const model = await builder.createModel({%s});" % (outputOp), js_fd)
     util.WriteLineToFile("    const compilation = await model.compile({powerPreference: 'low-power'});", js_fd)
 
     computeParmList = []

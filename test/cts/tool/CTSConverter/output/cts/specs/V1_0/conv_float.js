@@ -11,7 +11,7 @@ describe('CTS', function() {
     const stride = 1;
     const intermediateOutput1 = nn.conv2d(op1, op2, [pad0, pad0, pad0, pad0], [stride, stride], [1, 1], 1, 'nhwc');
     const op4 = builder.add(intermediateOutput1, op3);
-    const model = await builder.createModel({'op4', op4});
+    const model = await builder.createModel({op4});
     const compilation = await model.compile({powerPreference: 'low-power'});
     const op1Buffer = new Float32Array([1.0, 1.0, 1.0, 1.0, 0.5, 1.0, 1.0, 1.0, 1.0]);
     let outputs = await compilation.compute({'op1': {buffer: op1Buffer}});
