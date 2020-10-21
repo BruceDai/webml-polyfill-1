@@ -9,6 +9,12 @@
         "conv_float_weights_as_inputs.mod.py",
         "depthwise_conv2d_float_large.mod.py",
         "depthwise_conv2d_float_large_2.mod.py",
-        "depthwise_conv2d_float_large_2_weights_as_inputs.mod.py"
+        "depthwise_conv2d_float_large_2_weights_as_inputs.mod.py",
+        "mul_relu.mod.py",
+        "mul.mod.py",
+        "avg_pool_float_1.mod.py",
+        "avg_pool_float_2.mod.py",
+        "avg_pool_float_3.mod.py",
+        "avg_pool_float_4.mod.py"
     ]
 }

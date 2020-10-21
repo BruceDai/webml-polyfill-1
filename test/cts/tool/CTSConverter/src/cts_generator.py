@@ -484,8 +484,14 @@ def DumpJSTest(model, example, js_fd):
     convertedInfoArray = tg.FileNames.specName.split('_')
     equalOp = util.OperationsInfoDict[androidNNOpType]['equalOp']
     testPurpose = equalOp
+    depthwiseConv2dFlag = False
     start = 1
     if tg.FileNames.specName.startswith('depthwise_conv2d'):
+        start = 2
+        depthwiseConv2dFlag = True
+    elif tg.FileNames.specName.startswith('avg_pool'):
+        start = 2
+    elif tg.FileNames.specName.startswith('max_pool'):
         start = 2
 
     if convertedInfoArray[-1].isdigit():
@@ -529,6 +535,7 @@ def DumpJSTest(model, example, js_fd):
         comment = "    // Converted test case (from: {spec_file}). Do not edit"
         specFileBase = os.path.basename(tg.FileNames.specFile)
         util.WriteLineToFile(comment.format(spec_file = specFileBase), js_fd)
+        util.WriteLineToFile("    const builder = nn.createModelBuilder();", js_fd)
 
     insList = model.operations[0].ins
     # remove dulicate item
@@ -541,15 +548,15 @@ def DumpJSTest(model, example, js_fd):
         # else op just is paramter for opertation, define variable for builder.<operation> function
         bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(op))
         if op in androidNNOpInputList:
-            util.WriteLineToFile("    const %s = builder.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp)), js_fd)
+            util.WriteLineToFile("    const %s = builder.input('%s', %s);" % (op, op, util.GetOperandDesc(op.type, bFilterOp, depthwiseConv2dFlag)), js_fd)
         else:
             if op.type.type.startswith('TENSOR_'):
                 tensorValues = op.value
                 if bFilterOp:
-                    tensorValues = util.reorderValues(op.value, op.type)
-                util.WriteLineToFile("    const %s = builder.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp), util.TypedArrayTypeMapping[op.type.type].value, tensorValues), js_fd)
+                    tensorValues = util.reorderValues(op.value, op.type, depthwiseConv2dFlag)
+                util.WriteLineToFile("    const %s = builder.constant(%s, new %s(%s));" % (op, util.GetOperandDesc(op.type, bFilterOp, depthwiseConv2dFlag), util.TypedArrayTypeMapping[op.type.type].value, tensorValues), js_fd)
             else:
-                if insList.index(op) != len(insList) - 1:
+                if not util.ExcludeVarDefine(androidNNOpType, insList.index(op)):
                     util.WriteLineToFile('    const %s = %s;' % (op, androidNNOpParamList[androidNNOpParamList.index(op)].value[0]), js_fd)
 
 
@@ -557,7 +564,7 @@ def DumpJSTest(model, example, js_fd):
     util.WriteLineToFile("    const expected = %s;" % outputFeedDict[outputOp], js_fd)
 
     # add opertation(s) into model graph
-    if androidNNOpType == 'ADD':
+    if androidNNOpType in ['ADD', 'MUL']:
         # builder.add doesn't fuse relu activation, only has two params
         addParamList = [ins.name for ins in insList[:-1]]
         if not bActivation:
@@ -570,7 +577,7 @@ def DumpJSTest(model, example, js_fd):
         strideParam = [str(insList[8]), str(insList[7])]
         group = '1'
         if androidNNOpType == 'DEPTHWISE_CONV_2D':
-            group = insList[9].name
+            group = insList[0].type.GetDimensionsString()[1:-1].split(',')[-1].strip()
         conv2dParam = "%s, %s, [%s], [%s], [1, 1], %s, 'nhwc'" % (insList[0].name, insList[1].name, ', '.join(paddingParam), ', '.join(strideParam), group)
         util.WriteLineToFile("    const intermediateOutput1 = builder.%s(%s);" % (equalOp, conv2dParam), js_fd)
         biasOp = insList[2]
@@ -579,6 +586,16 @@ def DumpJSTest(model, example, js_fd):
         else:
             util.WriteLineToFile("    const intermediateOutput2 = builder.add(intermediateOutput1, %s);" % biasOp, js_fd)
             util.WriteLineToFile("    const %s = builder.%s(intermediateOutput2);" % (outputOp, reluType), js_fd)
+    elif androidNNOpType in ['AVERAGE_POOL_2D', 'MAX_POOL_2D']:
+        windowDimensions = [str(insList[8]), str(insList[7])]
+        paddingParam = [str(insList[3]), str(insList[4]), str(insList[1]), str(insList[2])]
+        strideParam = [str(insList[6]), str(insList[5])]
+        poolParam = "%s, [%s], [%s], [%s], [1, 1], 'nhwc'" % (insList[0].name, ', '.join(windowDimensions), ', '.join(paddingParam), ', '.join(strideParam))
+        if not bActivation:
+            util.WriteLineToFile("    const %s = builder.%s(%s);" % (outputOp, equalOp, poolParam), js_fd)
+        else:
+            util.WriteLineToFile("    const intermediateOutput1 = builder.%s(%s);" % (equalOp, poolParam), js_fd)
+            util.WriteLineToFile("    const %s = builder.%s(intermediateOutput1);" % (outputOp, reluType), js_fd)        
 
     util.WriteLineToFile("    const model = await builder.createModel({%s});" % (outputOp), js_fd)
     util.WriteLineToFile("    const compilation = await model.compile({powerPreference: 'low-power'});", js_fd)
@@ -589,7 +606,7 @@ def DumpJSTest(model, example, js_fd):
         values = inputFeedDict[nnInOp]
         bFilterOp = util.CheckFilterOp(androidNNOpType, insList.index(nnInOp))
         if bFilterOp:
-            values = util.reorderValues(values, nnInOp.type)
+            values = util.reorderValues(values, nnInOp.type, depthwiseConv2dFlag)
         util.WriteLineToFile("    const %sBuffer = new %s(%s);" % (nnInOp, util.TypedArrayTypeMapping[nnInOp.type.type].value, values), js_fd)
         computeParmList.append("'%s': {buffer: %sBuffer}" % (nnInOp, nnInOp))
 
