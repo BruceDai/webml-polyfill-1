@@ -346,6 +346,7 @@ def CheckActions(model, example):
                        example.examplesName, p.GetValueAsNumpy()), sys.stderr)
                 return
 
+    print('Configuration.check_list.keys() %s' % Configuration.check_list.keys())
     # check data type
     for operation in model.operations:
         if operation.optype not in Configuration.check_list.keys() and \
@@ -447,7 +448,7 @@ def CheckActions(model, example):
                 return
 
 def DumpJSTest(model, example, js_fd):
-    CheckActions(model, example)
+    # CheckActions(model, example)
 
     androidNNOpInputList = example.model.GetInputs()
     androidNNOpOutputList = example.model.GetOutputs()
@@ -537,6 +538,7 @@ def DumpJSTest(model, example, js_fd):
         util.WriteLineToFile(comment.format(spec_file = specFileBase), js_fd)
         util.WriteLineToFile("    const builder = nn.createModelBuilder();", js_fd)
 
+    print(androidNNOpInputList)
     insList = model.operations[0].ins
     # remove dulicate item
     # ["op1", "op2", "op3", "pad0", "pad0", "pad0", "pad0", "stride", "stride", "act"] -> ["op1", "op2", "op3", "pad0","stride", "act"]
@@ -595,7 +597,11 @@ def DumpJSTest(model, example, js_fd):
             util.WriteLineToFile("    const %s = builder.%s(%s);" % (outputOp, equalOp, poolParam), js_fd)
         else:
             util.WriteLineToFile("    const intermediateOutput1 = builder.%s(%s);" % (equalOp, poolParam), js_fd)
-            util.WriteLineToFile("    const %s = builder.%s(intermediateOutput1);" % (outputOp, reluType), js_fd)        
+            util.WriteLineToFile("    const %s = builder.%s(intermediateOutput1);" % (outputOp, reluType), js_fd)
+    elif androidNNOpType == 'RELU':
+        util.WriteLineToFile("    const %s = builder.relu(%s);" % (outputOp, insList[0].name), js_fd)
+    elif androidNNOpType == 'RESHAPE':
+        util.WriteLineToFile("    const %s = builder.reshape(%s, %s);" % (outputOp, insList[0].name, insList[1].name), js_fd)        
 
     util.WriteLineToFile("    const model = await builder.createModel({%s});" % (outputOp), js_fd)
     util.WriteLineToFile("    const compilation = await model.compile({powerPreference: 'low-power'});", js_fd)
