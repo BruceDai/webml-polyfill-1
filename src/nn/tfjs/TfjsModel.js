@@ -5,8 +5,7 @@ import * as utils from '../utils';
 import CyclicProfiler from '../instrument';
 import wasmPath from '../../../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm.wasm';
 import simdPath from '../../../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm-simd.wasm';
-import threadedSimdPath from '../../../node_modules/@tensorflow/tfjs-backend-wasm/dist/tfjs-backend-wasm-threaded-simd.wasm';
-import {setWasmPaths} from '@tensorflow/tfjs-backend-wasm';
+import { setWasmPath } from '@tensorflow/tfjs-backend-wasm';
 import "@tensorflow/tfjs-backend-webgl";
 
 var warmUpRuns = 1;
@@ -35,9 +34,18 @@ export default class TfjsModel {
     switch (this._model._backend) {
       case ('WASM'): {
         if (tf.getBackend() != 'wasm') {
-          // Assume the wasm file is located in the same folder as webml-polyfill.js
-          const wasmPathPrefix = window.location.protocol + "//" + window.location.host + "/dist/";
-          setWasmPaths(wasmPathPrefix);
+          function _fixWasmPath() {
+            // Assume the wasm file is located in the same folder as webml-polyfill.js
+            for (let s of document.getElementsByTagName('script')) {
+              if (s.src.indexOf('webml-polyfill.js') !== -1) {
+                let parts = s.src.split('/');
+                parts[parts.length - 1] = '';
+                return parts.join('/');
+              }
+            }
+            return '';
+          }
+          setWasmPath(null, { 'tfjs-backend-wasm.wasm': _fixWasmPath(wasmPath) });
           await tf.setBackend('wasm');
         };
       } break;
